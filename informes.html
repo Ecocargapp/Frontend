@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroSoft · Informes de Cría</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --grano:#B7791F;--campo:#3F6212;--acero:#334155;--acero-osc:#1E293B;
+  --papel:#FBFAF7;--linea:#E2DFD6;--texto:#2A2A28;--texto-sec:#6B7066;
+  --alerta:#B91C1C;--ok:#3F6212;--azul:#2563EB;--rosa:#DB2777;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--papel);color:var(--texto);line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--campo);outline-offset:2px}
+#app{min-height:100vh;display:grid;grid-template-columns:230px 1fr}
+@media (max-width:820px){#app{grid-template-columns:1fr}}
+.side{background:var(--acero-osc);color:#CBD5E1;padding:18px 0;display:flex;flex-direction:column}
+.side-logo{display:flex;align-items:center;gap:9px;padding:0 20px 18px;font-weight:800;font-size:17px;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-logo .mark{width:28px;height:28px;background:var(--grano);border-radius:6px;display:grid;place-items:center;font-size:15px}
+.nav{padding:14px 0;flex:1}
+.nav a{display:flex;gap:10px;padding:10px 20px;color:#CBD5E1;text-decoration:none;font-size:14px;font-weight:500;border-left:3px solid transparent}
+.nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav a.activo{background:rgba(183,121,31,.16);color:#fff;border-left-color:var(--grano)}
+.nav .seccion{padding:13px 20px 5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#64748B;font-family:'IBM Plex Mono',monospace}
+.side-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px}
+.side-foot .nom{color:#fff;font-weight:600}
+.side-foot button{margin-top:9px;background:none;border:1px solid rgba(255,255,255,.18);color:#CBD5E1;padding:6px 11px;border-radius:5px;font-size:12px;width:100%}
+.main{padding:26px 32px;overflow-y:auto}
+@media (max-width:820px){.main{padding:20px 16px}}
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;border-bottom:2px solid var(--linea);padding-bottom:16px;flex-wrap:wrap;gap:12px}
+.topbar h1{font-size:23px;font-weight:800}
+.topbar .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grano);font-weight:600;margin-bottom:3px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--linea);flex-wrap:wrap}
+.tabs button{background:none;border:none;padding:10px 16px;font-size:14px;font-weight:600;color:var(--texto-sec);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.activo{color:var(--campo);border-bottom-color:var(--campo)}
+.filtros{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end}
+.filtros .campo{display:flex;flex-direction:column;gap:4px}
+.filtros label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace}
+.filtros input,.filtros select{padding:8px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px;background:#fff}
+.btn-accent{background:var(--grano);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-accent:hover{background:#96610F}
+.btn-ghost{background:none;border:1.5px solid var(--linea);color:var(--acero);padding:8px 15px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-ghost:hover{border-color:var(--acero)}
+.export-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.card{background:#fff;border:1px solid var(--linea);border-radius:9px;padding:16px}
+.card .lbl{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
+.card .num{font-size:26px;font-weight:800;line-height:1}
+.card .sub{font-size:11.5px;color:var(--texto-sec);margin-top:4px}
+.card.destacada{background:#FDF6EC;border-color:var(--grano)}
+.tabla-wrap{background:#fff;border:1px solid var(--linea);border-radius:8px;overflow:auto;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th{text-align:left;padding:10px 13px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;border-bottom:1.5px solid var(--linea);background:#FCFBF8;white-space:nowrap}
+td{padding:10px 13px;font-size:13.5px;border-bottom:1px solid var(--linea)}
+tr:last-child td{border-bottom:none}
+.seccion-tit{font-size:16px;font-weight:700;margin:24px 0 12px}
+.vista{display:none}.vista.activa{display:block}
+.nota{background:#FEF9EC;border:1px solid #FDE9C8;border-radius:7px;padding:11px 14px;font-size:13px;color:#8A6D3B;margin-bottom:18px}
+.modal-bg{position:fixed;inset:0;background:rgba(30,41,59,.55);display:none;place-items:center;padding:18px;z-index:100;overflow-y:auto}
+.modal-bg.abierto{display:grid}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:500px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--linea);font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-head button{background:none;border:none;font-size:22px;color:var(--texto-sec)}
+.modal-body{padding:20px 22px}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--linea);display:flex;gap:10px;justify-content:flex-end}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.campo-m{margin-bottom:12px}
+.campo-m label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);margin-bottom:5px;font-family:'IBM Plex Mono',monospace}
+.campo-m input,.campo-m select{width:100%;padding:9px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px}
+.msg{margin-top:10px;padding:9px 11px;border-radius:6px;font-size:13px;display:none}
+.msg.error{background:#FEF2F2;color:var(--alerta);border:1px solid #FECACA;display:block}
+.msg.ok{background:#F0FDF4;color:var(--ok);border:1px solid #BBF7D0;display:block}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="side">
+    <div class="side-logo"><span class="mark">📊</span> AgroSoft</div>
+    <nav class="nav">
+      <div class="seccion">Operación</div>
+      <a href="index.html">Panel principal</a>
+      <a href="cria.html">Granja de cría</a>
+      <a href="informes.html" class="activo">Informes de cría</a>
+    </nav>
+    <div class="side-foot">
+      <div class="nom" id="foot-nom">—</div>
+      <button id="btn-logout">Cerrar sesión</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="eyebrow">Granja de cría</div><h1>Informes</h1></div>
+    </div>
+
+    <div class="filtros">
+      <div class="campo"><label>Desde</label><input id="f-desde" type="date"></div>
+      <div class="campo"><label>Hasta</label><input id="f-hasta" type="date"></div>
+      <button class="btn-accent" id="btn-aplicar">Aplicar periodo</button>
+      <button class="btn-ghost" id="btn-consumo">+ Registrar consumo de alimento</button>
+    </div>
+
+    <div class="tabs">
+      <button data-tab="reproductivo" class="activo">Reproductivo</button>
+      <button data-tab="costos">Consumo y costos</button>
+      <button data-tab="bandas">Por banda</button>
+      <button data-tab="descarte">Hembras a descartar</button>
+    </div>
+
+    <!-- REPRODUCTIVO -->
+    <section class="vista activa" data-tab="reproductivo">
+      <div class="export-bar">
+        <button class="btn-ghost" onclick="exportarExcel('reproductivo')">⬇ Excel</button>
+        <button class="btn-ghost" onclick="exportarPDF('reproductivo')">⬇ PDF</button>
+      </div>
+      <div class="cards" id="cards-repro"></div>
+      <div class="seccion-tit">Detalle</div>
+      <div class="tabla-wrap"><table id="tabla-repro"><tbody></tbody></table></div>
+    </section>
+
+    <!-- COSTOS -->
+    <section class="vista" data-tab="costos">
+      <div class="export-bar">
+        <button class="btn-ghost" onclick="exportarExcel('costos')">⬇ Excel</button>
+        <button class="btn-ghost" onclick="exportarPDF('costos')">⬇ PDF</button>
+      </div>
+      <div id="costos-vacio" class="nota" style="display:none">Aún no hay consumos de alimento registrados. Usa "Registrar consumo de alimento" para empezar a calcular costos.</div>
+      <div class="cards" id="cards-costos"></div>
+      <div class="seccion-tit">Consumo por fase</div>
+      <div class="tabla-wrap"><table id="tabla-costos"><thead><tr><th>Fase</th><th>Bultos</th><th>Costo total</th></tr></thead><tbody></tbody></table></div>
+      <div class="nota" id="nota-costos"></div>
+    </section>
+
+    <!-- BANDAS -->
+    <section class="vista" data-tab="bandas">
+      <div class="export-bar">
+        <button class="btn-ghost" onclick="exportarExcel('bandas')">⬇ Excel</button>
+        <button class="btn-ghost" onclick="exportarPDF('bandas')">⬇ PDF</button>
+      </div>
+      <div class="tabla-wrap"><table id="tabla-bandas"><thead><tr><th>Banda</th><th>Fecha parto</th><th>Partos</th><th>Nac. vivos</th><th>Nac. totales</th><th>Prom. vivos</th><th>Destetados</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- DESCARTE -->
+    <section class="vista" data-tab="descarte">
+      <div class="filtros">
+        <div class="campo"><label>Ciclo máximo</label><input id="d-ciclo" type="number" value="7" style="width:100px"></div>
+        <div class="campo"><label>Nac. vivos mínimo</label><input id="d-nv" type="number" value="8" style="width:120px"></div>
+        <button class="btn-accent" id="btn-descarte">Calcular</button>
+        <button class="btn-ghost" onclick="exportarExcel('descarte')">⬇ Excel</button>
+      </div>
+      <div class="seccion-tit">Por ciclo alto (≥ umbral)</div>
+      <div class="tabla-wrap"><table id="tabla-desc-ciclo"><thead><tr><th>Arete</th><th>Ciclo actual</th><th>Estado</th></tr></thead><tbody></tbody></table></div>
+      <div class="seccion-tit">Por bajo rendimiento (prom. nacidos vivos &lt; umbral)</div>
+      <div class="tabla-wrap"><table id="tabla-desc-rend"><thead><tr><th>Arete</th><th>Ciclo</th><th>Prom. nac. vivos</th><th>Partos evaluados</th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-head"><span>Registrar consumo de alimento</span><button id="modal-cerrar">×</button></div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="campo-m"><label>Fecha *</label><input id="co-fecha" type="date"></div>
+        <div class="campo-m"><label>Fase *</label><select id="co-fase"><option value="gestacion">Gestación</option><option value="lactancia">Lactancia</option><option value="reemplazo">Reemplazo</option><option value="preinicio">Preinicio</option></select></div>
+      </div>
+      <div class="grid2">
+        <div class="campo-m"><label>Bultos *</label><input id="co-bultos" type="number" step="0.01" min="0"></div>
+        <div class="campo-m"><label>Costo por bulto ($)</label><input id="co-costo" type="number" step="0.01" min="0"></div>
+      </div>
+      <div class="grid2">
+        <div class="campo-m"><label>Tipo de alimento</label><input id="co-tipo" placeholder="ej. Gestación 14%"></div>
+        <div class="campo-m"><label>Banda (opcional)</label><select id="co-banda"><option value="">—</option></select></div>
+      </div>
+      <div class="msg" id="co-msg"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" id="co-cancelar">Cancelar</button><button class="btn-accent" id="co-guardar">Guardar</button></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const API = window.AGROSOFT_CONFIG.API_URL;
+const $ = s => document.querySelector(s);
+const token = sessionStorage.getItem('agrosoft_token');
+if(!token) location.href='index.html';
+const api = async (r,o={})=>{ const h={'Content-Type':'application/json','Authorization':'Bearer '+token,...(o.headers||{})}; const res=await fetch(API+r,{...o,headers:h}); const d=await res.json().catch(()=>({})); if(res.status===401){location.href='index.html';return;} if(!res.ok)throw new Error(d.error||'Error'); return d; };
+const fmt = n => n==null?'—':new Intl.NumberFormat('es-CO').format(n);
+const money = n => n==null?'—':'$'+new Intl.NumberFormat('es-CO').format(Math.round(n));
+let datosActuales = {};
+
+(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre;}catch{} })();
+$('#btn-logout').addEventListener('click',()=>{ sessionStorage.removeItem('agrosoft_token'); location.href='index.html'; });
+
+function params(){ const p=new URLSearchParams(); if($('#f-desde').value)p.set('desde',$('#f-desde').value); if($('#f-hasta').value)p.set('hasta',$('#f-hasta').value); return p.toString()?'?'+p.toString():''; }
+
+// tabs
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('activo'));
+  b.classList.add('activo');
+  document.querySelectorAll('.vista').forEach(v=>v.classList.toggle('activa',v.dataset.tab===b.dataset.tab));
+  cargarTab(b.dataset.tab);
+}));
+$('#btn-aplicar').addEventListener('click',()=>cargarTab(document.querySelector('.tabs button.activo').dataset.tab));
+
+async function cargarTab(tab){
+  if(tab==='reproductivo') return cargarRepro();
+  if(tab==='costos') return cargarCostos();
+  if(tab==='bandas') return cargarBandas();
+  if(tab==='descarte') return cargarDescarte();
+}
+
+// REPRODUCTIVO
+async function cargarRepro(){
+  const d = await api('/api/informes/reproductivo'+params()); datosActuales.reproductivo=d;
+  $('#cards-repro').innerHTML = `
+    <div class="card"><div class="lbl">Total partos</div><div class="num">${fmt(d.partos.total)}</div></div>
+    <div class="card destacada"><div class="lbl">Nacidos vivos</div><div class="num">${fmt(d.partos.nacidos_vivos)}</div><div class="sub">Prom: ${d.partos.prom_nacidos_vivos}/parto</div></div>
+    <div class="card"><div class="lbl">Nacidos totales</div><div class="num">${fmt(d.partos.nacidos_totales)}</div><div class="sub">Prom: ${d.partos.prom_nacidos_totales}/parto</div></div>
+    <div class="card"><div class="lbl">Destetados</div><div class="num">${fmt(d.destetes.lechones_destetados)}</div><div class="sub">Prom: ${d.destetes.prom_destetados}/camada</div></div>
+    <div class="card"><div class="lbl">Mortalidad lactancia</div><div class="num">${d.mortalidad_lactancia_pct??'—'}%</div></div>
+    <div class="card"><div class="lbl">Tasa de partos</div><div class="num">${d.tasa_partos_pct??'—'}%</div><div class="sub">${d.servicios} servicios</div></div>`;
+  $('#tabla-repro tbody').innerHTML = [
+    ['Nacidos vivos', fmt(d.partos.nacidos_vivos)],
+    ['Nacidos muertos', fmt(d.partos.nacidos_muertos)],
+    ['Momificados', fmt(d.partos.momificados)],
+    ['Nacidos totales', fmt(d.partos.nacidos_totales)],
+    ['Promedio nacidos vivos/parto', d.partos.prom_nacidos_vivos],
+    ['Promedio nacidos totales/parto', d.partos.prom_nacidos_totales],
+    ['Peso promedio camada al nacer (kg)', d.partos.prom_peso_camada],
+    ['Lechones destetados', fmt(d.destetes.lechones_destetados)],
+    ['Promedio destetados/camada', d.destetes.prom_destetados],
+    ['Peso promedio camada al destete (kg)', d.destetes.prom_peso_destete],
+    ['Mortalidad en lactancia (%)', d.mortalidad_lactancia_pct??'—'],
+    ['Servicios', fmt(d.servicios)],
+    ['Tasa de partos (%)', d.tasa_partos_pct??'—'],
+  ].map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right;font-weight:600">${v}</td></tr>`).join('');
+}
+
+// COSTOS
+async function cargarCostos(){
+  const d = await api('/api/informes/consumo'+params()); datosActuales.costos=d;
+  const hayDatos = d.bultos_total>0;
+  $('#costos-vacio').style.display = hayDatos?'none':'block';
+  $('#cards-costos').innerHTML = hayDatos ? `
+    <div class="card"><div class="lbl">Bultos totales</div><div class="num">${fmt(d.bultos_total)}</div></div>
+    <div class="card"><div class="lbl">Costo alimento</div><div class="num" style="font-size:20px">${money(d.costo_alimento_total)}</div></div>
+    <div class="card destacada"><div class="lbl">Costo lechón (alimento)</div><div class="num" style="font-size:20px">${money(d.costo_lechon_alimento)}</div><div class="sub">${fmt(d.lechones_destetados)} destetados</div></div>
+    <div class="card"><div class="lbl">Bultos lactancia/parto</div><div class="num">${d.bultos_lactancia_por_parto??'—'}</div></div>
+    <div class="card"><div class="lbl">Bultos gestación/parto</div><div class="num">${d.bultos_gestacion_por_parto??'—'}</div></div>` : '';
+  $('#tabla-costos tbody').innerHTML = d.por_fase.map(f=>`<tr><td style="text-transform:capitalize">${f.fase}</td><td style="text-align:right">${fmt(f.bultos)}</td><td style="text-align:right">${money(f.costo_total)}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--texto-sec);padding:20px">Sin datos</td></tr>`;
+  $('#nota-costos').textContent = d.nota;
+}
+
+// BANDAS
+async function cargarBandas(){
+  const d = await api('/api/informes/por-banda'); datosActuales.bandas=d;
+  $('#tabla-bandas tbody').innerHTML = d.length ? d.map(b=>`
+    <tr><td><strong>${b.nombre}</strong></td><td class="mono">${b.fecha_parto?b.fecha_parto.slice(0,10):'—'}</td>
+    <td>${fmt(b.partos)}</td><td>${fmt(b.nacidos_vivos)}</td><td>${fmt(b.nacidos_totales)}</td>
+    <td>${b.prom_nacidos_vivos}</td><td>${fmt(b.destetados)}</td></tr>`).join('')
+    : `<tr><td colspan="7" style="text-align:center;color:var(--texto-sec);padding:20px">No hay bandas registradas todavía</td></tr>`;
+}
+
+// DESCARTE
+async function cargarDescarte(){
+  const p = new URLSearchParams({ ciclo_max:$('#d-ciclo').value, nacidos_vivos_min:$('#d-nv').value });
+  const d = await api('/api/informes/hembras-descartar?'+p.toString()); datosActuales.descarte=d;
+  $('#tabla-desc-ciclo tbody').innerHTML = d.por_ciclo_alto.length ? d.por_ciclo_alto.map(c=>
+    `<tr><td><strong>${c.arete}</strong></td><td>${c.ciclo_actual}</td><td>${c.estado}</td></tr>`).join('')
+    : `<tr><td colspan="3" style="text-align:center;color:var(--texto-sec);padding:16px">Ninguna cerda supera el ciclo ${$('#d-ciclo').value}</td></tr>`;
+  $('#tabla-desc-rend tbody').innerHTML = d.por_bajo_rendimiento.length ? d.por_bajo_rendimiento.map(c=>
+    `<tr><td><strong>${c.arete}</strong></td><td>${c.ciclo_actual}</td><td>${c.prom_nacidos_vivos}</td><td>${c.partos_evaluados}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:var(--texto-sec);padding:16px">Ninguna cerda (con ≥2 partos) por debajo del umbral</td></tr>`;
+}
+$('#btn-descarte').addEventListener('click', cargarDescarte);
+
+// CONSUMO modal
+$('#btn-consumo').addEventListener('click', async ()=>{
+  $('#co-fecha').value = new Date().toISOString().slice(0,10);
+  try{ const bandas = await api('/api/informes/bandas'); $('#co-banda').innerHTML='<option value="">—</option>'+bandas.map(b=>`<option value="${b.id}">${b.nombre}</option>`).join(''); }catch{}
+  $('#modal-bg').classList.add('abierto');
+});
+$('#modal-cerrar').addEventListener('click',()=>$('#modal-bg').classList.remove('abierto'));
+$('#co-cancelar').addEventListener('click',()=>$('#modal-bg').classList.remove('abierto'));
+$('#co-guardar').addEventListener('click', async ()=>{
+  const body={ fecha:$('#co-fecha').value, fase:$('#co-fase').value, bultos:$('#co-bultos').value,
+    costo_bulto:$('#co-costo').value||null, tipo_alimento:$('#co-tipo').value.trim()||null, banda_id:$('#co-banda').value||null };
+  const msg=$('#co-msg'); msg.className='msg';
+  try{ await api('/api/informes/consumos',{method:'POST',body:JSON.stringify(body)}); $('#modal-bg').classList.remove('abierto'); cargarCostos(); }
+  catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+});
+
+// EXPORTAR
+function filasParaExport(tab){
+  if(tab==='reproductivo'){ const d=datosActuales.reproductivo; return [
+    ['Indicador','Valor'],
+    ['Total partos',d.partos.total],['Nacidos vivos',d.partos.nacidos_vivos],['Nacidos muertos',d.partos.nacidos_muertos],
+    ['Momificados',d.partos.momificados],['Nacidos totales',d.partos.nacidos_totales],
+    ['Prom nacidos vivos/parto',d.partos.prom_nacidos_vivos],['Prom nacidos totales/parto',d.partos.prom_nacidos_totales],
+    ['Peso prom camada nacer',d.partos.prom_peso_camada],['Lechones destetados',d.destetes.lechones_destetados],
+    ['Prom destetados/camada',d.destetes.prom_destetados],['Mortalidad lactancia %',d.mortalidad_lactancia_pct],
+    ['Servicios',d.servicios],['Tasa partos %',d.tasa_partos_pct]]; }
+  if(tab==='costos'){ const d=datosActuales.costos; const r=[['Fase','Bultos','Costo total']];
+    d.por_fase.forEach(f=>r.push([f.fase,f.bultos,f.costo_total]));
+    r.push([]); r.push(['Bultos totales',d.bultos_total]); r.push(['Costo alimento total',d.costo_alimento_total]);
+    r.push(['Lechones destetados',d.lechones_destetados]); r.push(['Costo lechón (alimento)',d.costo_lechon_alimento]); return r; }
+  if(tab==='bandas'){ const d=datosActuales.bandas; const r=[['Banda','Fecha parto','Partos','Nac vivos','Nac totales','Prom vivos','Destetados']];
+    d.forEach(b=>r.push([b.nombre,b.fecha_parto?b.fecha_parto.slice(0,10):'',b.partos,b.nacidos_vivos,b.nacidos_totales,b.prom_nacidos_vivos,b.destetados])); return r; }
+  if(tab==='descarte'){ const d=datosActuales.descarte; const r=[['Tipo','Arete','Ciclo','Detalle']];
+    d.por_ciclo_alto.forEach(c=>r.push(['Ciclo alto',c.arete,c.ciclo_actual,c.estado]));
+    d.por_bajo_rendimiento.forEach(c=>r.push(['Bajo rendimiento',c.arete,c.ciclo_actual,'prom nv '+c.prom_nacidos_vivos])); return r; }
+}
+function exportarExcel(tab){
+  const filas=filasParaExport(tab); const ws=XLSX.utils.aoa_to_sheet(filas); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Informe'); XLSX.writeFile(wb,`informe_${tab}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function exportarPDF(tab){
+  const { jsPDF }=window.jspdf; const doc=new jsPDF(); const filas=filasParaExport(tab);
+  doc.setFontSize(14); doc.text('AgroSoft — Informe '+tab, 14, 18);
+  doc.setFontSize(9); doc.text('Generado: '+new Date().toLocaleString('es-CO'), 14, 25);
+  let y=35; doc.setFontSize(10);
+  filas.forEach((f,i)=>{ if(y>280){doc.addPage();y=20;} doc.text(f.map(x=>String(x??'')).join('   |   '),14,y); if(i===0){doc.setLineWidth(0.2);doc.line(14,y+1.5,196,y+1.5);} y+=7; });
+  doc.save(`informe_${tab}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+// init
+cargarRepro();
+</script>
+</body>
+</html>
