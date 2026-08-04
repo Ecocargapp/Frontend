@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroSoft · Tareas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--grano:#B7791F;--campo:#3F6212;--acero:#334155;--acero-osc:#1E293B;--papel:#FBFAF7;--linea:#E2DFD6;--texto:#2A2A28;--texto-sec:#6B7066;--alerta:#B91C1C;--ok:#3F6212;--azul:#2563EB;--rosa:#DB2777;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--papel);color:var(--texto);line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--campo);outline-offset:2px}
+#app{min-height:100vh;display:grid;grid-template-columns:230px 1fr}
+@media (max-width:820px){#app{grid-template-columns:1fr}}
+.side{background:var(--acero-osc);color:#CBD5E1;padding:18px 0;display:flex;flex-direction:column}
+.side-logo{display:flex;align-items:center;gap:9px;padding:0 20px 18px;font-weight:800;font-size:17px;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-logo .mark{width:28px;height:28px;background:var(--grano);border-radius:6px;display:grid;place-items:center;font-size:15px}
+.nav{padding:14px 0;flex:1}
+.nav a{display:flex;gap:10px;padding:10px 20px;color:#CBD5E1;text-decoration:none;font-size:14px;font-weight:500;border-left:3px solid transparent}
+.nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav a.activo{background:rgba(183,121,31,.16);color:#fff;border-left-color:var(--grano)}
+.nav .seccion{padding:13px 20px 5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#64748B;font-family:'IBM Plex Mono',monospace}
+.side-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px}
+.side-foot .nom{color:#fff;font-weight:600}
+.side-foot button{margin-top:9px;background:none;border:1px solid rgba(255,255,255,.18);color:#CBD5E1;padding:6px 11px;border-radius:5px;font-size:12px;width:100%}
+.main{padding:26px 32px;overflow-y:auto}
+@media (max-width:820px){.main{padding:20px 16px}}
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;border-bottom:2px solid var(--linea);padding-bottom:16px;flex-wrap:wrap;gap:12px}
+.topbar h1{font-size:23px;font-weight:800}
+.topbar .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grano);font-weight:600;margin-bottom:3px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--linea);flex-wrap:wrap}
+.tabs button{background:none;border:none;padding:10px 16px;font-size:14px;font-weight:600;color:var(--texto-sec);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.activo{color:var(--campo);border-bottom-color:var(--campo)}
+.vista{display:none}.vista.activa{display:block}
+.filtros{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end}
+.filtros .campo{display:flex;flex-direction:column;gap:4px}
+.filtros label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace}
+.filtros input,.filtros select{padding:8px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px;background:#fff}
+.btn-accent{background:var(--grano);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-accent:hover{background:#96610F}
+.btn-ghost{background:none;border:1.5px solid var(--linea);color:var(--acero);padding:8px 15px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-ghost:hover{border-color:var(--acero)}
+.export-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px}
+.card{background:#fff;border:1px solid var(--linea);border-radius:9px;padding:16px}
+.card .lbl{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
+.card .num{font-size:24px;font-weight:800;line-height:1}
+.tabla-wrap{background:#fff;border:1px solid var(--linea);border-radius:8px;overflow:auto;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{text-align:left;padding:10px 13px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;border-bottom:1.5px solid var(--linea);background:#FCFBF8;white-space:nowrap}
+td{padding:10px 13px;font-size:13.5px;border-bottom:1px solid var(--linea)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.p-sanidad{background:#FCE7F3;color:var(--rosa)}
+.p-operacional{background:#EFF6FF;color:var(--azul)}
+.p-animal{background:#EFF3EA;color:var(--campo)}
+.seccion-tit{font-size:15px;font-weight:700;margin:22px 0 12px}
+.mini-btn{background:none;border:1px solid var(--linea);border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer}
+.mini-btn:hover{border-color:var(--campo);background:#F5F8EE}
+.modal-bg{position:fixed;inset:0;background:rgba(30,41,59,.55);display:none;place-items:center;padding:18px;z-index:100;overflow-y:auto}
+.modal-bg.abierto{display:grid}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:520px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--linea);font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-head button{background:none;border:none;font-size:22px;color:var(--texto-sec)}
+.modal-body{padding:20px 22px}.modal-foot{padding:14px 22px;border-top:1px solid var(--linea);display:flex;gap:10px;justify-content:flex-end}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.campo-m{margin-bottom:12px}.campo-m label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);margin-bottom:5px;font-family:'IBM Plex Mono',monospace}
+.campo-m input,.campo-m select{width:100%;padding:9px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px}
+.msg{margin-top:10px;padding:9px 11px;border-radius:6px;font-size:13px;display:none}
+.msg.error{background:#FEF2F2;color:var(--alerta);border:1px solid #FECACA;display:block}
+.msg.ok{background:#F0FDF4;color:var(--ok);border:1px solid #BBF7D0;display:block}
+.vacio{text-align:center;padding:30px;color:var(--texto-sec)}
+.nota{background:#FEF9EC;border:1px solid #FDE9C8;border-radius:7px;padding:11px 14px;font-size:13px;color:#8A6D3B;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="side">
+    <div class="side-logo"><span class="mark">📋</span> AgroSoft</div>
+    <nav class="nav">
+      <div class="seccion">Operación</div>
+      <a href="index.html">Panel principal</a>
+      <a href="cria.html">Granja de cría</a>
+      <a href="consumo.html">Consumo diario</a>
+      <a href="informes.html">Informes de cría</a>
+      <a href="tareas.html" class="activo">Tareas y vacunación</a>
+    </nav>
+    <div class="side-foot">
+      <div class="nom" id="foot-nom">—</div>
+      <button id="btn-logout">Cerrar sesión</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar"><div><div class="eyebrow">Granja de cría</div><h1>Tareas y vacunación</h1></div></div>
+
+    <div class="tabs">
+      <button data-tab="calendario" class="activo">Calendario de tareas</button>
+      <button data-tab="catalogo">Catálogo de vacunas/tareas</button>
+    </div>
+
+    <!-- CALENDARIO -->
+    <section class="vista activa" data-tab="calendario">
+      <div class="nota">El sistema calcula automáticamente qué tarea le toca a cada hembra según su estado reproductivo (días desde servicio, parto o destete). Elige el periodo y genera el plan de trabajo del operario.</div>
+      <div class="filtros">
+        <div class="campo"><label>Desde</label><input id="c-desde" type="date"></div>
+        <div class="campo"><label>Hasta</label><input id="c-hasta" type="date"></div>
+        <button class="btn-accent" id="btn-generar">Generar calendario</button>
+        <button class="btn-ghost" onclick="exportarExcel()">⬇ Excel</button>
+        <button class="btn-ghost" onclick="exportarPDF()">⬇ PDF</button>
+      </div>
+      <div class="cards" id="cards-cal"></div>
+      <div class="seccion-tit">Tareas programadas</div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Tarea</th><th>Animal</th><th>Cerda</th><th>Referencia</th><th>Dosis</th><th></th></tr></thead><tbody id="cal-tabla"><tr><td colspan="8" class="vacio">Genera el calendario para ver las tareas</td></tr></tbody></table></div>
+    </section>
+
+    <!-- CATÁLOGO -->
+    <section class="vista" data-tab="catalogo">
+      <div class="filtros">
+        <div class="campo"><label>Tipo de animal</label>
+          <select id="cat-filtro"><option value="">Todos</option><option>Reemplazo</option><option>Gestante</option><option>Madre</option><option>Lechones</option><option>Ceba</option></select></div>
+        <button class="btn-ghost" id="btn-filtrar-cat">Filtrar</button>
+        <button class="btn-accent" id="btn-nueva-tarea" style="margin-left:auto">+ Nueva tarea</button>
+      </div>
+      <div class="tabla-wrap"><table><thead><tr><th>Tipo</th><th>Tarea</th><th>Animal</th><th>Cuándo</th><th>Dosis</th><th></th></tr></thead><tbody id="cat-tabla"></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-head"><span id="modal-titulo">—</span><button id="modal-cerrar">×</button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const API = window.AGROSOFT_CONFIG.API_URL;
+const $ = s => document.querySelector(s);
+const token = sessionStorage.getItem('agrosoft_token');
+if(!token) location.href='index.html';
+const api = async (r,o={})=>{ const h={'Content-Type':'application/json','Authorization':'Bearer '+token,...(o.headers||{})}; const res=await fetch(API+r,{...o,headers:h}); const d=await res.json().catch(()=>({})); if(res.status===401){location.href='index.html';return;} if(!res.ok)throw new Error(d.error||'Error'); return d; };
+const hoy = ()=>new Date().toISOString().slice(0,10);
+const enDias = n => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+let calData = { eventos: [] };
+
+(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre;}catch{} })();
+$('#btn-logout').addEventListener('click',()=>{ sessionStorage.removeItem('agrosoft_token'); location.href='index.html'; });
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('activo'));
+  b.classList.add('activo');
+  document.querySelectorAll('.vista').forEach(v=>v.classList.toggle('activa',v.dataset.tab===b.dataset.tab));
+  if(b.dataset.tab==='catalogo') cargarCatalogo();
+}));
+
+const pillTipo = t => t==='Sanidad'?'<span class="pill p-sanidad">Sanidad</span>':'<span class="pill p-operacional">Operacional</span>';
+
+// ---- CALENDARIO ----
+$('#c-desde').value = hoy();
+$('#c-hasta').value = enDias(30);
+$('#btn-generar').addEventListener('click', generar);
+async function generar(){
+  const p = new URLSearchParams({ desde:$('#c-desde').value, hasta:$('#c-hasta').value });
+  calData = await api('/api/tareas/calendario?'+p.toString());
+  // tarjetas resumen
+  const sani = calData.eventos.filter(e=>e.tipo_tarea==='Sanidad').length;
+  const oper = calData.eventos.filter(e=>e.tipo_tarea==='Operacional').length;
+  $('#cards-cal').innerHTML = `
+    <div class="card"><div class="lbl">Total tareas</div><div class="num">${calData.total}</div></div>
+    <div class="card"><div class="lbl">Sanidad (vacunas/medic.)</div><div class="num">${sani}</div></div>
+    <div class="card"><div class="lbl">Operacional (chequeos)</div><div class="num">${oper}</div></div>`;
+  pintarCal();
+}
+function pintarCal(){
+  const tb = $('#cal-tabla');
+  if(!calData.eventos.length){ tb.innerHTML=`<tr><td colspan="8" class="vacio">No hay tareas en este periodo</td></tr>`; return; }
+  tb.innerHTML = calData.eventos.map((e,i)=>`
+    <tr>
+      <td class="mono">${e.fecha}</td>
+      <td>${pillTipo(e.tipo_tarea)}</td>
+      <td><strong>${e.tarea}</strong></td>
+      <td><span class="pill p-animal">${e.tipo_animal}</span></td>
+      <td>${e.animal}</td>
+      <td class="mono" style="font-size:12px">${e.dias}d de ${e.evento_ref}</td>
+      <td>${e.cantidad||'—'}</td>
+      <td><button class="mini-btn" onclick="marcarHecha(${i})">✓ Hecha</button></td>
+    </tr>`).join('');
+}
+async function marcarHecha(i){
+  const e = calData.eventos[i];
+  try{
+    await api('/api/tareas/aplicar',{method:'POST',body:JSON.stringify({
+      tarea_id:e.tarea_id, cerda_id:e.cerda_id, fecha_programada:e.fecha, fecha_aplicada:hoy()
+    })});
+    calData.eventos.splice(i,1); pintarCal();
+  }catch(err){ alert(err.message); }
+}
+
+// ---- CATÁLOGO ----
+async function cargarCatalogo(){
+  const filtro = $('#cat-filtro').value;
+  const q = filtro ? '?tipo_animal='+encodeURIComponent(filtro) : '';
+  const cat = await api('/api/tareas/catalogo'+q);
+  $('#cat-tabla').innerHTML = cat.map(t=>`
+    <tr>
+      <td>${pillTipo(t.tipo_tarea)}</td>
+      <td><strong>${t.tarea}</strong></td>
+      <td><span class="pill p-animal">${t.tipo_animal}</span></td>
+      <td class="mono" style="font-size:12px">${t.dias}d de ${t.evento_ref}</td>
+      <td>${t.cantidad||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="mini-btn" onclick='editarTarea(${JSON.stringify(t).replace(/'/g,"&#39;")})'>✏️</button>
+        <button class="mini-btn" onclick='eliminarTarea(${t.id})'>🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+$('#btn-filtrar-cat').addEventListener('click', cargarCatalogo);
+
+function formTarea(t){
+  return `
+    <div class="grid2">
+      <div class="campo-m"><label>Tipo</label><select id="t-tipo"><option${t&&t.tipo_tarea==='Sanidad'?' selected':''}>Sanidad</option><option${t&&t.tipo_tarea==='Operacional'?' selected':''}>Operacional</option></select></div>
+      <div class="campo-m"><label>Tipo de animal</label><select id="t-animal">${['Reemplazo','Gestante','Madre','Lechones','Ceba'].map(a=>`<option${t&&t.tipo_animal===a?' selected':''}>${a}</option>`).join('')}</select></div>
+    </div>
+    <div class="campo-m"><label>Nombre de la tarea</label><input id="t-nombre" value="${t?t.tarea:''}" placeholder="ej. Vacuna - Micoflex"></div>
+    <div class="grid2">
+      <div class="campo-m"><label>Evento de referencia</label><select id="t-evento">${[['nacimiento','Días de edad (nacimiento)'],['servicio','Días de gestación (servicio)'],['parto','Días de lactancia (parto)'],['destete','Días desde destete']].map(([v,l])=>`<option value="${v}"${t&&t.evento_ref===v?' selected':''}>${l}</option>`).join('')}</select></div>
+      <div class="campo-m"><label>Días</label><input id="t-dias" type="number" value="${t?t.dias:''}"></div>
+    </div>
+    <div class="campo-m"><label>Dosis / cantidad</label><input id="t-dosis" value="${t?(t.cantidad||''):''}" placeholder="ej. 1, 10 ml"></div>
+    <div class="msg" id="t-msg"></div>`;
+}
+$('#btn-nueva-tarea').addEventListener('click', ()=>{
+  $('#modal-titulo').textContent='Nueva tarea';
+  $('#modal-body').innerHTML=formTarea(null);
+  $('#modal-foot').innerHTML=`<button class="btn-ghost" id="t-cancelar">Cancelar</button><button class="btn-accent" id="t-guardar">Crear</button>`;
+  $('#modal-bg').classList.add('abierto');
+  $('#t-cancelar').addEventListener('click',cerrarModal);
+  $('#t-guardar').addEventListener('click',()=>guardarTarea(null));
+});
+function editarTarea(t){
+  $('#modal-titulo').textContent='Editar tarea';
+  $('#modal-body').innerHTML=formTarea(t);
+  $('#modal-foot').innerHTML=`<button class="btn-ghost" id="t-cancelar">Cancelar</button><button class="btn-accent" id="t-guardar">Guardar</button>`;
+  $('#modal-bg').classList.add('abierto');
+  $('#t-cancelar').addEventListener('click',cerrarModal);
+  $('#t-guardar').addEventListener('click',()=>guardarTarea(t.id));
+}
+async function guardarTarea(id){
+  const body={ tipo_tarea:$('#t-tipo').value, tarea:$('#t-nombre').value.trim(), tipo_animal:$('#t-animal').value,
+    evento_ref:$('#t-evento').value, dias:+$('#t-dias').value, cantidad:$('#t-dosis').value.trim()||null };
+  const msg=$('#t-msg'); msg.className='msg';
+  try{
+    if(id) await api('/api/tareas/catalogo/'+id,{method:'PUT',body:JSON.stringify(body)});
+    else await api('/api/tareas/catalogo',{method:'POST',body:JSON.stringify(body)});
+    cerrarModal(); cargarCatalogo();
+  }catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+}
+async function eliminarTarea(id){
+  if(!confirm('¿Eliminar esta tarea del catálogo?')) return;
+  try{ await api('/api/tareas/catalogo/'+id,{method:'DELETE'}); cargarCatalogo(); }catch(e){ alert(e.message); }
+}
+function cerrarModal(){ $('#modal-bg').classList.remove('abierto'); }
+$('#modal-cerrar').addEventListener('click', cerrarModal);
+$('#modal-bg').addEventListener('click', e=>{ if(e.target===$('#modal-bg')) cerrarModal(); });
+
+// ---- EXPORTAR ----
+function filasExport(){
+  const r=[['Fecha','Tipo','Tarea','Animal','Cerda','Referencia','Dosis']];
+  calData.eventos.forEach(e=>r.push([e.fecha,e.tipo_tarea,e.tarea,e.tipo_animal,e.animal,`${e.dias}d de ${e.evento_ref}`,e.cantidad||'']));
+  return r;
+}
+function exportarExcel(){
+  const ws=XLSX.utils.aoa_to_sheet(filasExport()); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Tareas'); XLSX.writeFile(wb,`tareas_${$('#c-desde').value}_a_${$('#c-hasta').value}.xlsx`);
+}
+function exportarPDF(){
+  const { jsPDF }=window.jspdf; const doc=new jsPDF(); const filas=filasExport();
+  doc.setFontSize(14); doc.text('AgroSoft — Calendario de tareas',14,18);
+  doc.setFontSize(9); doc.text(`Periodo: ${$('#c-desde').value} a ${$('#c-hasta').value}`,14,25);
+  let y=34; doc.setFontSize(8);
+  filas.forEach((f,i)=>{ if(y>285){doc.addPage();y=20;} doc.text(f.slice(0,6).map(x=>String(x||'')).join('  |  '),14,y); if(i===0){doc.line(14,y+1.5,196,y+1.5);} y+=6; });
+  doc.save(`tareas_${$('#c-desde').value}.pdf`);
+}
+
+// init
+generar();
+</script>
+</body>
+</html>
