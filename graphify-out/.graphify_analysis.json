@@ -1,0 +1,209 @@
+{
+  "communities": {
+    "0": [
+      "ceba_api",
+      "ceba_cargar_consumo",
+      "ceba_cargar_granjas",
+      "ceba_cargar_inventario",
+      "ceba_cargar_movimientos",
+      "ceba_liquidar"
+    ],
+    "1": [
+      "backend_api",
+      "consumo_api",
+      "consumo_cargar_bandas",
+      "consumo_cargar_diario",
+      "readme"
+    ],
+    "2": [
+      "index_api",
+      "index_carusuarios",
+      "index_entrarapp",
+      "index_login",
+      "session_storage_token"
+    ],
+    "3": [
+      "informes_api",
+      "informes_cargar_bandas",
+      "informes_cargar_costos",
+      "informes_cargar_descarte",
+      "informes_cargar_repro"
+    ],
+    "4": [
+      "ceba",
+      "ext_xlsx",
+      "informes_exportar_excel",
+      "tareas_exportar_excel"
+    ],
+    "5": [
+      "consumo",
+      "cria",
+      "index",
+      "informes"
+    ],
+    "6": [
+      "cria_abrir_ficha",
+      "cria_api",
+      "cria_cargar_censo",
+      "cria_cargar_tablero"
+    ],
+    "7": [
+      "ext_jspdf",
+      "informes_exportar_pdf",
+      "tareas",
+      "tareas_exportar_pdf"
+    ],
+    "8": [
+      "tareas_api",
+      "tareas_cargar_catalogo",
+      "tareas_generar",
+      "tareas_marcar_hecha"
+    ],
+    "9": [
+      "config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.4666666666666667,
+    "1": 0.4,
+    "2": 0.6,
+    "3": 0.4,
+    "4": 0.5,
+    "5": 0.6666666666666666,
+    "6": 0.5,
+    "7": 0.5,
+    "8": 0.5,
+    "9": 1.0
+  },
+  "gods": [
+    {
+      "id": "ceba_api",
+      "label": "api() — Fetch wrapper (ceba.html)",
+      "degree": 7
+    },
+    {
+      "id": "backend_api",
+      "label": "AgroSoft Backend REST API",
+      "degree": 7
+    },
+    {
+      "id": "session_storage_token",
+      "label": "agrosoft_token (sessionStorage)",
+      "degree": 7
+    },
+    {
+      "id": "informes_api",
+      "label": "api() — Fetch wrapper (informes.html)",
+      "degree": 6
+    },
+    {
+      "id": "cria",
+      "label": "Granja de Cría",
+      "degree": 5
+    },
+    {
+      "id": "cria_api",
+      "label": "api() — Fetch wrapper (cria.html)",
+      "degree": 5
+    },
+    {
+      "id": "tareas_api",
+      "label": "api() — Fetch wrapper (tareas.html)",
+      "degree": 5
+    },
+    {
+      "id": "informes",
+      "label": "Informes de Cría",
+      "degree": 4
+    },
+    {
+      "id": "index_api",
+      "label": "api() — Fetch wrapper (index.html)",
+      "degree": 4
+    },
+    {
+      "id": "consumo_api",
+      "label": "api() — Fetch wrapper (consumo.html)",
+      "degree": 4
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Granja de Cría",
+      "target": "Ceba (Engorde)",
+      "source_files": [
+        "cria.html",
+        "ceba.html"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `Ceba (Engorde)` unexpectedly reaches hub `Granja de Cría`"
+    },
+    {
+      "source": "Index / Login / Panel de Control",
+      "target": "Granja de Cría",
+      "source_files": [
+        "index.html",
+        "cria.html"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; peripheral node `Index / Login / Panel de Control` unexpectedly reaches hub `Granja de Cría`"
+    },
+    {
+      "source": "Granja de Cría",
+      "target": "Consumo Diario de Alimento",
+      "source_files": [
+        "cria.html",
+        "consumo.html"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; peripheral node `Consumo Diario de Alimento` unexpectedly reaches hub `Granja de Cría`"
+    },
+    {
+      "source": "Granja de Cría",
+      "target": "Tareas y Vacunación",
+      "source_files": [
+        "cria.html",
+        "tareas.html"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Consumo Diario de Alimento",
+      "target": "Informes de Cría",
+      "source_files": [
+        "consumo.html",
+        "informes.html"
+      ],
+      "confidence": "INFERRED",
+      "relation": "shares_data_with",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `agrosoft_token (sessionStorage)` connect `User Auth and Login` to `Fattening Management API`, `Feed Consumption Backend`, `Reports API Wrappers`, `Sow Census Dashboard`, `Task Calendar Management`?",
+      "why": "High betweenness centrality (0.197) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `AgroSoft Backend REST API` connect `Feed Consumption Backend` to `Fattening Management API`, `User Auth and Login`, `Reports API Wrappers`, `Sow Census Dashboard`, `Task Calendar Management`?",
+      "why": "High betweenness centrality (0.176) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `api() — Fetch wrapper (ceba.html)` connect `Fattening Management API` to `Feed Consumption Backend`, `User Auth and Login`?",
+      "why": "High betweenness centrality (0.150) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `AgroSoft Frontend README`, `Index / Login / Panel de Control`, `abrirFicha() — Open sow detail` to the rest of the system?",
+      "why": "20 weakly-connected nodes found - possible documentation gaps or missing edges."
+    }
+  ]
+}
