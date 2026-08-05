@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroSoft · Ceba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--grano:#B7791F;--campo:#3F6212;--acero:#334155;--acero-osc:#1E293B;--papel:#FBFAF7;--linea:#E2DFD6;--texto:#2A2A28;--texto-sec:#6B7066;--alerta:#B91C1C;--ok:#3F6212;--azul:#2563EB;--rosa:#DB2777;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--papel);color:var(--texto);line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--campo);outline-offset:2px}
+#app{min-height:100vh;display:grid;grid-template-columns:230px 1fr}
+@media (max-width:820px){#app{grid-template-columns:1fr}}
+.side{background:var(--acero-osc);color:#CBD5E1;padding:18px 0;display:flex;flex-direction:column}
+.side-logo{display:flex;align-items:center;gap:9px;padding:0 20px 18px;font-weight:800;font-size:17px;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-logo .mark{width:28px;height:28px;background:var(--grano);border-radius:6px;display:grid;place-items:center;font-size:15px}
+.nav{padding:14px 0;flex:1}
+.nav a{display:flex;gap:10px;padding:10px 20px;color:#CBD5E1;text-decoration:none;font-size:14px;font-weight:500;border-left:3px solid transparent}
+.nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav a.activo{background:rgba(183,121,31,.16);color:#fff;border-left-color:var(--grano)}
+.nav .seccion{padding:13px 20px 5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#64748B;font-family:'IBM Plex Mono',monospace}
+.side-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px}
+.side-foot .nom{color:#fff;font-weight:600}
+.side-foot button{margin-top:9px;background:none;border:1px solid rgba(255,255,255,.18);color:#CBD5E1;padding:6px 11px;border-radius:5px;font-size:12px;width:100%}
+.main{padding:26px 32px;overflow-y:auto}
+@media (max-width:820px){.main{padding:20px 16px}}
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;border-bottom:2px solid var(--linea);padding-bottom:16px;flex-wrap:wrap;gap:12px}
+.topbar h1{font-size:23px;font-weight:800}
+.topbar .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grano);font-weight:600;margin-bottom:3px}
+.granja-sel{display:flex;gap:8px;align-items:center}
+.granja-sel select{padding:9px 13px;border:1.5px solid var(--linea);border-radius:7px;font-size:15px;font-weight:600;background:#fff}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--linea);flex-wrap:wrap}
+.tabs button{background:none;border:none;padding:10px 16px;font-size:14px;font-weight:600;color:var(--texto-sec);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.activo{color:var(--campo);border-bottom-color:var(--campo)}
+.vista{display:none}.vista.activa{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.card{background:#fff;border:1px solid var(--linea);border-radius:9px;padding:16px}
+.card.destacado{border-color:var(--grano);background:#FEFBF4}
+.card .lbl{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
+.card .num{font-size:23px;font-weight:800;line-height:1.1}
+.card .sub{font-size:11.5px;color:var(--texto-sec);margin-top:4px}
+.panel{background:#fff;border:1px solid var(--linea);border-radius:9px;padding:18px;margin-bottom:20px}
+.panel h3{font-size:15px;font-weight:700;margin-bottom:14px}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end}
+.campo{display:flex;flex-direction:column;gap:4px}
+.campo label{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace}
+.campo input,.campo select{padding:8px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px;background:#fff}
+.btn-accent{background:var(--grano);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-accent:hover{background:#96610F}
+.btn-ghost{background:none;border:1.5px solid var(--linea);color:var(--acero);padding:8px 15px;border-radius:6px;font-weight:600;font-size:13px}
+.btn-ghost:hover{border-color:var(--acero)}
+.tabla-wrap{background:#fff;border:1px solid var(--linea);border-radius:8px;overflow:auto;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th{text-align:left;padding:10px 13px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;border-bottom:1.5px solid var(--linea);background:#FCFBF8;white-space:nowrap}
+td{padding:10px 13px;font-size:13.5px;border-bottom:1px solid var(--linea)}
+tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.p-ingreso{background:#EFF3EA;color:var(--campo)}
+.p-muerte{background:#FEF2F2;color:var(--alerta)}
+.p-venta{background:#EFF6FF;color:var(--azul)}
+.mini-btn{background:none;border:1px solid var(--linea);border-radius:5px;padding:3px 9px;font-size:12px}
+.mini-btn.del:hover{border-color:var(--alerta);background:#FEF2F2}
+.msg{margin-top:10px;padding:9px 11px;border-radius:6px;font-size:13px;display:none}
+.msg.error{background:#FEF2F2;color:var(--alerta);border:1px solid #FECACA;display:block}
+.msg.ok{background:#F0FDF4;color:var(--ok);border:1px solid #BBF7D0;display:block}
+.vacio{text-align:center;padding:26px;color:var(--texto-sec)}
+.nota{background:#FEF9EC;border:1px solid #FDE9C8;border-radius:7px;padding:11px 14px;font-size:13px;color:#8A6D3B;margin-bottom:18px}
+.seccion-tit{font-size:15px;font-weight:700;margin:6px 0 12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="side">
+    <div class="side-logo"><span class="mark">🐖</span> AgroSoft</div>
+    <nav class="nav">
+      <div class="seccion">Operación</div>
+      <a href="index.html">Panel principal</a>
+      <a href="cria.html">Granja de cría</a>
+      <a href="consumo.html">Consumo diario</a>
+      <a href="informes.html">Informes de cría</a>
+      <a href="tareas.html">Tareas y vacunación</a>
+      <a href="ceba.html" class="activo">Ceba</a>
+    </nav>
+    <div class="side-foot">
+      <div class="nom" id="foot-nom">—</div>
+      <button id="btn-logout">Cerrar sesión</button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><div class="eyebrow">Engorde</div><h1>Ceba</h1></div>
+      <div class="granja-sel">
+        <label class="mono" style="font-size:11px;color:var(--texto-sec)">GRANJA</label>
+        <select id="granja"></select>
+      </div>
+    </div>
+
+    <!-- INVENTARIO / TARJETAS -->
+    <div class="cards" id="cards-inv"></div>
+
+    <div class="tabs">
+      <button data-tab="movimientos" class="activo">Movimientos</button>
+      <button data-tab="consumo">Consumo de alimento</button>
+      <button data-tab="lotes">Lotes desde cría</button>
+      <button data-tab="liquidacion">Liquidación</button>
+    </div>
+
+    <!-- MOVIMIENTOS -->
+    <section class="vista activa" data-tab="movimientos">
+      <div class="panel">
+        <h3>Registrar movimiento</h3>
+        <div class="form-row">
+          <div class="campo"><label>Tipo</label><select id="m-tipo"><option value="ingreso">Ingreso</option><option value="muerte">Muerte</option><option value="venta">Venta</option></select></div>
+          <div class="campo"><label>Fecha</label><input id="m-fecha" type="date"></div>
+          <div class="campo"><label>Cantidad</label><input id="m-cantidad" type="number" min="1"></div>
+          <div class="campo" id="wrap-peso"><label>Peso prom. (kg)</label><input id="m-peso" type="number" step="0.01"></div>
+          <div class="campo" id="wrap-costo"><label>Costo lechón ($)</label><input id="m-costo" type="number" step="0.01"></div>
+          <div class="campo" id="wrap-venta" style="display:none"><label>Valor venta ($)</label><input id="m-venta" type="number" step="0.01"></div>
+          <div class="campo" id="wrap-causa" style="display:none"><label>Causa / comprador</label><input id="m-causa"></div>
+          <button class="btn-accent" id="btn-mov">Registrar</button>
+        </div>
+        <div class="msg" id="m-msg"></div>
+      </div>
+      <div class="seccion-tit">Historial de movimientos</div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Peso prom.</th><th>Costo/Valor</th><th>Detalle</th><th></th></tr></thead><tbody id="mov-tabla"></tbody></table></div>
+    </section>
+
+    <!-- CONSUMO -->
+    <section class="vista" data-tab="consumo">
+      <div class="panel">
+        <h3>Registrar consumo de alimento</h3>
+        <div class="form-row">
+          <div class="campo"><label>Fecha</label><input id="c-fecha" type="date"></div>
+          <div class="campo"><label>Bultos (40 kg)</label><input id="c-bultos" type="number" step="0.01"></div>
+          <div class="campo"><label>Costo/bulto ($)</label><input id="c-costo" type="number" step="0.01"></div>
+          <div class="campo"><label>Tipo alimento</label><input id="c-tipo" placeholder="Finalizador, Levante..."></div>
+          <button class="btn-accent" id="btn-cons">Registrar</button>
+        </div>
+        <div class="msg" id="c-msg"></div>
+      </div>
+      <div class="seccion-tit">Historial de consumo</div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Bultos</th><th>Kg</th><th>Costo/bulto</th><th>Tipo</th><th></th></tr></thead><tbody id="cons-tabla"></tbody></table></div>
+    </section>
+
+    <!-- LOTES DESDE CRÍA -->
+    <section class="vista" data-tab="lotes">
+      <div class="nota">Cuando destetas una banda, créala como lote aquí: el sistema toma sus lechones, peso total (suma de camadas) y costo por lechón (gestación + lactancia). Luego trasládalo a una granja de ceba y queda el ingreso automático.</div>
+
+      <div class="panel">
+        <h3>Crear lote desde una banda destetada</h3>
+        <div class="form-row">
+          <div class="campo"><label>Banda</label><select id="lote-banda"></select></div>
+          <button class="btn-ghost" id="btn-preview">Calcular valores</button>
+        </div>
+        <div id="preview-lote" style="display:none;margin-top:16px">
+          <div class="cards">
+            <div class="card"><div class="lbl">Lechones</div><div class="num" id="pv-lechones">—</div></div>
+            <div class="card"><div class="lbl">Peso total</div><div class="num" id="pv-peso">—</div><div class="sub">kg (suma camadas)</div></div>
+            <div class="card"><div class="lbl">Costo por lechón</div><div class="num" id="pv-costolechon">—</div></div>
+            <div class="card destacado"><div class="lbl">Costo total lote</div><div class="num" id="pv-costototal">—</div></div>
+          </div>
+          <div class="form-row" style="margin-top:6px">
+            <div class="campo"><label>Nombre del lote</label><input id="lote-nombre" placeholder="ej. Destete May-2026"></div>
+            <div class="campo"><label>Lechones (ajustable)</label><input id="lote-lechones" type="number"></div>
+            <div class="campo"><label>Peso total kg (ajustable)</label><input id="lote-peso" type="number" step="0.01"></div>
+            <div class="campo"><label>Costo/lechón (ajustable)</label><input id="lote-costo" type="number" step="0.01"></div>
+            <button class="btn-accent" id="btn-crear-lote">Crear lote</button>
+          </div>
+          <div class="msg" id="lote-msg"></div>
+        </div>
+      </div>
+
+      <div class="seccion-tit">Lotes disponibles (sin trasladar)</div>
+      <div class="tabla-wrap"><table><thead><tr><th>Lote</th><th>Banda</th><th>Lechones</th><th>Peso total</th><th>Costo/lechón</th><th>Costo total</th><th>Trasladar a</th><th></th></tr></thead><tbody id="lotes-disp"></tbody></table></div>
+
+      <div class="seccion-tit">Lotes ya trasladados</div>
+      <div class="tabla-wrap"><table><thead><tr><th>Lote</th><th>Banda</th><th>Lechones</th><th>Granja</th><th>Trasladado</th></tr></thead><tbody id="lotes-trasl"></tbody></table></div>
+    </section>
+
+    <!-- LIQUIDACIÓN -->
+    <section class="vista" data-tab="liquidacion">
+      <div class="nota">La liquidación calcula la <strong>conversión alimenticia</strong> (kg alimento ÷ kg producidos) y el <strong>costo por kilo</strong> (alimento + lechones ÷ kg producidos). Ingresa el peso promedio de salida de los animales.</div>
+      <div class="panel">
+        <h3>Liquidar</h3>
+        <div class="form-row">
+          <div class="campo"><label>Desde (opcional)</label><input id="l-desde" type="date"></div>
+          <div class="campo"><label>Hasta (opcional)</label><input id="l-hasta" type="date"></div>
+          <div class="campo"><label>Peso prom. salida (kg)</label><input id="l-peso" type="number" step="0.01"></div>
+          <button class="btn-accent" id="btn-liquidar">Calcular</button>
+          <button class="btn-ghost" id="btn-guardar-liq" style="display:none">Guardar liquidación</button>
+        </div>
+        <div class="msg" id="l-msg"></div>
+      </div>
+      <div id="liq-resultado"></div>
+    </section>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script>
+const API = window.AGROSOFT_CONFIG.API_URL;
+const $ = s => document.querySelector(s);
+const token = sessionStorage.getItem('agrosoft_token');
+if(!token) location.href='index.html';
+const api = async (r,o={})=>{ const h={'Content-Type':'application/json','Authorization':'Bearer '+token,...(o.headers||{})}; const res=await fetch(API+r,{...o,headers:h}); const d=await res.json().catch(()=>({})); if(res.status===401){location.href='index.html';return;} if(!res.ok)throw new Error(d.error||'Error'); return d; };
+const hoy = ()=>new Date().toISOString().slice(0,10);
+const money = n => n==null?'—':'$'+Number(n).toLocaleString('es-CO',{maximumFractionDigits:0});
+const fmt = n => n==null?'—':Number(n).toLocaleString('es-CO',{maximumFractionDigits:2});
+let granjaId = null, ultimaLiq = null;
+
+(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre;}catch{} })();
+$('#btn-logout').addEventListener('click',()=>{ sessionStorage.removeItem('agrosoft_token'); location.href='index.html'; });
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('activo'));
+  b.classList.add('activo');
+  document.querySelectorAll('.vista').forEach(v=>v.classList.toggle('activa',v.dataset.tab===b.dataset.tab));
+  if(b.dataset.tab==='consumo') cargarConsumo();
+}));
+
+// tipo de movimiento cambia los campos visibles
+$('#m-tipo').addEventListener('change', ()=>{
+  const t=$('#m-tipo').value;
+  $('#wrap-costo').style.display = t==='ingreso'?'':'none';
+  $('#wrap-venta').style.display = t==='venta'?'':'none';
+  $('#wrap-causa').style.display = (t==='muerte'||t==='venta')?'':'none';
+  $('#wrap-peso').style.display = t==='muerte'?'none':'';
+});
+
+async function cargarGranjas(){
+  const g = await api('/api/ceba/granjas');
+  $('#granja').innerHTML = g.map(x=>`<option value="${x.id}">${x.nombre}</option>`).join('');
+  granjaId = g[0]?.id;
+  await refrescar();
+}
+$('#granja').addEventListener('change', ()=>{ granjaId=+$('#granja').value; refrescar(); });
+
+async function refrescar(){
+  await cargarInventario();
+  await cargarMovimientos();
+}
+
+async function cargarInventario(){
+  const i = await api('/api/ceba/inventario/'+granjaId);
+  $('#cards-inv').innerHTML = `
+    <div class="card destacado"><div class="lbl">Inventario actual</div><div class="num">${i.inventario_actual}</div><div class="sub">animales vivos</div></div>
+    <div class="card"><div class="lbl">Ingresados</div><div class="num">${i.ingresos}</div></div>
+    <div class="card"><div class="lbl">Muertes</div><div class="num">${i.muertes}</div><div class="sub">${i.ingresos?((i.muertes/i.ingresos)*100).toFixed(1):0}% mortalidad</div></div>
+    <div class="card"><div class="lbl">Vendidos</div><div class="num">${i.ventas}</div></div>
+    <div class="card"><div class="lbl">Alimento consumido</div><div class="num">${fmt(i.bultos_consumidos)}</div><div class="sub">bultos · ${fmt(i.kg_alimento)} kg</div></div>`;
+}
+
+async function cargarMovimientos(){
+  const m = await api('/api/ceba/movimientos/'+granjaId);
+  const pill = t => `<span class="pill p-${t}">${t}</span>`;
+  $('#mov-tabla').innerHTML = m.length ? m.map(r=>{
+    let detalle = r.causa||'';
+    if(r.tipo==='venta' && r.costo_por_kg_venta){
+      detalle = `Conv. ${r.conversion_venta??'—'} · costo/kg ${money(r.costo_por_kg_venta)}`;
+    }
+    return `<tr>
+      <td class="mono">${r.fecha.slice(0,10)}</td>
+      <td>${pill(r.tipo)}</td>
+      <td><strong>${r.cantidad}</strong></td>
+      <td>${r.peso_promedio?fmt(r.peso_promedio)+' kg':'—'}</td>
+      <td>${r.tipo==='ingreso'?money(r.costo_lechon)+'/animal':r.tipo==='venta'?money(r.valor_venta):'—'}</td>
+      <td style="font-size:12px;color:var(--texto-sec)">${detalle}</td>
+      <td>${r.tipo==='venta'&&r.costo_alimento_asignado?`<button class="mini-btn" onclick='verCosteoVenta(${JSON.stringify(r).replace(/'/g,"&#39;")})'>📊</button> `:''}<button class="mini-btn del" onclick="borrarMov(${r.id})">🗑️</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" class="vacio">Sin movimientos todavía</td></tr>`;
+}
+
+function verCosteoVenta(r){
+  const costoTotal = Number(r.costo_alimento_asignado||0) + Number(r.costo_lechones_venta||0);
+  alert(
+    `COSTEO DE LA VENTA — ${r.cantidad} cerdos (${r.fecha.slice(0,10)})\n\n`+
+    `Peso entrada prom: ${fmt(r.peso_entrada_prom)} kg\n`+
+    `Peso salida: ${fmt(r.peso_promedio)} kg\n`+
+    `Kg producidos: ${fmt(r.kg_producidos_venta)} kg\n\n`+
+    `Alimento asignado: ${money(r.costo_alimento_asignado)} (${fmt(r.bultos_alimento_asignado)} bultos)\n`+
+    `Costo lechones: ${money(r.costo_lechones_venta)}\n`+
+    `COSTO TOTAL: ${money(costoTotal)}\n\n`+
+    `Conversión: ${r.conversion_venta??'—'}\n`+
+    `Costo por kg producido: ${money(r.costo_por_kg_venta)}\n`+
+    (r.valor_venta?`\nValor de venta: ${money(r.valor_venta)}\nMargen: ${money(Number(r.valor_venta)-costoTotal)}`:'')
+  );
+}
+
+$('#m-fecha').value = hoy();
+$('#btn-mov').addEventListener('click', async ()=>{
+  const t=$('#m-tipo').value;
+  const body={ granja_id:granjaId, fecha:$('#m-fecha').value, tipo:t, cantidad:+$('#m-cantidad').value };
+  if(t!=='muerte') body.peso_promedio=+$('#m-peso').value||null;
+  if(t==='ingreso') body.costo_lechon=+$('#m-costo').value||null;
+  if(t==='venta') body.valor_venta=+$('#m-venta').value||null;
+  if(t==='muerte'||t==='venta') body.causa=$('#m-causa').value.trim()||null;
+  const msg=$('#m-msg'); msg.className='msg';
+  try{
+    await api('/api/ceba/movimientos',{method:'POST',body:JSON.stringify(body)});
+    msg.className='msg ok'; msg.textContent='Movimiento registrado';
+    $('#m-cantidad').value='';$('#m-peso').value='';$('#m-costo').value='';$('#m-venta').value='';$('#m-causa').value='';
+    refrescar();
+  }catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+});
+async function borrarMov(id){ if(!confirm('¿Eliminar este movimiento?'))return; try{await api('/api/ceba/movimientos/'+id,{method:'DELETE'});refrescar();}catch(e){alert(e.message);} }
+
+async function cargarConsumo(){
+  const c = await api('/api/ceba/consumo/'+granjaId);
+  $('#cons-tabla').innerHTML = c.length ? c.map(r=>`
+    <tr><td class="mono">${r.fecha.slice(0,10)}</td><td>${fmt(r.bultos)}</td><td>${fmt(r.bultos*40)} kg</td><td>${money(r.costo_bulto)}</td><td>${r.tipo_alimento||'—'}</td>
+    <td><button class="mini-btn del" onclick="borrarCons(${r.id})">🗑️</button></td></tr>`).join('')
+    : `<tr><td colspan="6" class="vacio">Sin consumo registrado</td></tr>`;
+}
+$('#c-fecha').value = hoy();
+$('#btn-cons').addEventListener('click', async ()=>{
+  const body={ granja_id:granjaId, fecha:$('#c-fecha').value, bultos:+$('#c-bultos').value,
+    costo_bulto:+$('#c-costo').value||null, tipo_alimento:$('#c-tipo').value.trim()||null };
+  const msg=$('#c-msg'); msg.className='msg';
+  try{
+    await api('/api/ceba/consumo',{method:'POST',body:JSON.stringify(body)});
+    msg.className='msg ok'; msg.textContent='Consumo registrado';
+    $('#c-bultos').value='';$('#c-costo').value='';$('#c-tipo').value='';
+    cargarConsumo(); cargarInventario();
+  }catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+});
+async function borrarCons(id){ if(!confirm('¿Eliminar este registro?'))return; try{await api('/api/ceba/consumo/'+id,{method:'DELETE'});cargarConsumo();cargarInventario();}catch(e){alert(e.message);} }
+
+// LIQUIDACIÓN
+$('#btn-liquidar').addEventListener('click', ()=>liquidar(false));
+$('#btn-guardar-liq').addEventListener('click', ()=>liquidar(true));
+async function liquidar(guardar){
+  const body={ granja_id:granjaId, peso_promedio_salida:+$('#l-peso').value,
+    fecha_inicio:$('#l-desde').value||null, fecha_fin:$('#l-hasta').value||null, guardar };
+  const msg=$('#l-msg'); msg.className='msg';
+  try{
+    const r = await api('/api/ceba/liquidar',{method:'POST',body:JSON.stringify(body)});
+    ultimaLiq=r;
+    $('#btn-guardar-liq').style.display = guardar?'none':'';
+    if(guardar){ msg.className='msg ok'; msg.textContent='Liquidación guardada'; }
+    $('#liq-resultado').innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="lbl">Animales</div><div class="num">${r.animales.inventario_actual}</div><div class="sub">${r.animales.ingresados} ing · ${r.animales.muertos} muertos · ${r.animales.vendidos} vend.</div></div>
+        <div class="card"><div class="lbl">Peso entrada → salida</div><div class="num">${fmt(r.pesos.promedio_entrada)}→${fmt(r.pesos.promedio_salida)}</div><div class="sub">kg promedio</div></div>
+        <div class="card"><div class="lbl">Kg producidos</div><div class="num">${fmt(r.pesos.kg_producidos)}</div><div class="sub">ganancia de peso</div></div>
+        <div class="card destacado"><div class="lbl">Conversión</div><div class="num">${r.conversion??'—'}</div><div class="sub">kg alim / kg producido</div></div>
+        <div class="card destacado"><div class="lbl">Costo por kg</div><div class="num">${money(r.costos.por_kg)}</div><div class="sub">alimento + lechón</div></div>
+      </div>
+      <div class="panel">
+        <h3>Desglose de costos</h3>
+        <table><tbody>
+          <tr><td>Costo alimento (${fmt(r.alimento.bultos)} bultos · ${fmt(r.alimento.kg)} kg)</td><td style="text-align:right"><strong>${money(r.costos.alimento)}</strong></td></tr>
+          <tr><td>Costo lechones (${r.animales.ingresados} × entrada)</td><td style="text-align:right"><strong>${money(r.costos.lechones)}</strong></td></tr>
+          <tr><td><strong>Costo total</strong></td><td style="text-align:right"><strong>${money(r.costos.total)}</strong></td></tr>
+          <tr><td>Costo por kilo producido</td><td style="text-align:right"><strong style="color:var(--grano)">${money(r.costos.por_kg)}</strong></td></tr>
+        </tbody></table>
+        <div style="margin-top:12px;font-size:12.5px;color:var(--texto-sec)">${r.nota}</div>
+      </div>`;
+  }catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+}
+
+// ---- LOTES DESDE CRÍA ----
+document.querySelectorAll('.tabs button').forEach(b=>{
+  if(b.dataset.tab==='lotes') b.addEventListener('click', cargarLotes);
+});
+let bandasCache = [];
+async function cargarBandasSelect(){
+  if(!bandasCache.length){
+    try{ bandasCache = await api('/api/informes/bandas'); }catch{ bandasCache=[]; }
+  }
+  $('#lote-banda').innerHTML = bandasCache.map(b=>`<option value="${b.id}">${b.nombre}</option>`).join('');
+}
+$('#btn-preview').addEventListener('click', async ()=>{
+  const bandaId = $('#lote-banda').value;
+  if(!bandaId) return;
+  try{
+    const v = await api('/api/ceba/lote-preview/'+bandaId);
+    $('#pv-lechones').textContent = v.lechones;
+    $('#pv-peso').textContent = fmt(v.peso_total);
+    $('#pv-costolechon').textContent = money(v.costo_por_lechon);
+    $('#pv-costototal').textContent = money(v.costo_total);
+    $('#lote-lechones').value = v.lechones;
+    $('#lote-peso').value = v.peso_total||'';
+    $('#lote-costo').value = v.costo_por_lechon||'';
+    const bn = bandasCache.find(b=>b.id==bandaId);
+    $('#lote-nombre').value = 'Destete '+(bn?bn.nombre:bandaId);
+    $('#preview-lote').style.display='';
+  }catch(e){ alert(e.message); }
+});
+$('#btn-crear-lote').addEventListener('click', async ()=>{
+  const body={
+    nombre: $('#lote-nombre').value.trim(),
+    banda_id: +$('#lote-banda').value,
+    lechones: +$('#lote-lechones').value,
+    peso_total: +$('#lote-peso').value||null,
+    costo_por_lechon: +$('#lote-costo').value||null,
+  };
+  const msg=$('#lote-msg'); msg.className='msg';
+  try{
+    await api('/api/ceba/lotes',{method:'POST',body:JSON.stringify(body)});
+    msg.className='msg ok'; msg.textContent='Lote creado. Ahora puedes trasladarlo a una granja.';
+    $('#preview-lote').style.display='none';
+    cargarLotes();
+  }catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+});
+async function cargarLotes(){
+  await cargarBandasSelect();
+  const lotes = await api('/api/ceba/lotes');
+  const granjas = await api('/api/ceba/granjas');
+  const opts = granjas.map(g=>`<option value="${g.id}">${g.nombre}</option>`).join('');
+  const disp = lotes.filter(l=>!l.granja_ceba_id);
+  const trasl = lotes.filter(l=>l.granja_ceba_id);
+  $('#lotes-disp').innerHTML = disp.length ? disp.map(l=>`
+    <tr>
+      <td><strong>${l.nombre}</strong></td>
+      <td>${l.banda_nombre||'—'}</td>
+      <td>${l.lechones}</td>
+      <td>${fmt(l.peso_total)} kg</td>
+      <td>${money(l.costo_por_lechon)}</td>
+      <td>${money(l.costo_total)}</td>
+      <td><select id="dest-${l.id}">${opts}</select></td>
+      <td style="white-space:nowrap"><button class="mini-btn" onclick="trasladar(${l.id})">→ Trasladar</button> <button class="mini-btn del" onclick="borrarLote(${l.id})">🗑️</button></td>
+    </tr>`).join('') : `<tr><td colspan="8" class="vacio">No hay lotes disponibles. Crea uno desde una banda destetada.</td></tr>`;
+  $('#lotes-trasl').innerHTML = trasl.length ? trasl.map(l=>`
+    <tr><td><strong>${l.nombre}</strong></td><td>${l.banda_nombre||'—'}</td><td>${l.lechones}</td><td>${l.granja_nombre||'—'}</td><td class="mono">${l.trasladado_en?l.trasladado_en.slice(0,10):'—'}</td></tr>`).join('')
+    : `<tr><td colspan="5" class="vacio">Ningún lote trasladado todavía</td></tr>`;
+}
+async function trasladar(loteId){
+  const granjaDestino = $('#dest-'+loteId).value;
+  if(!confirm('¿Trasladar este lote a la granja seleccionada? Se creará el ingreso automáticamente.')) return;
+  try{
+    await api('/api/ceba/lotes/'+loteId+'/trasladar',{method:'POST',body:JSON.stringify({granja_id:+granjaDestino})});
+    alert('Lote trasladado. El ingreso quedó registrado en la granja de ceba.');
+    cargarLotes(); refrescar();
+  }catch(e){ alert(e.message); }
+}
+async function borrarLote(id){ if(!confirm('¿Eliminar este lote?'))return; try{await api('/api/ceba/lotes/'+id,{method:'DELETE'});cargarLotes();}catch(e){alert(e.message);} }
+
+cargarGranjas();
+</script>
+</body>
+</html>
