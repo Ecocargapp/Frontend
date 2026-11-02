@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroSoft · Granja de Cría</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grano:#B7791F;--campo:#3F6212;--campo-claro:#65883A;
+  --acero:#334155;--acero-osc:#1E293B;--papel:#FBFAF7;--linea:#E2DFD6;
+  --texto:#2A2A28;--texto-sec:#6B7066;--alerta:#B91C1C;--ok:#3F6212;
+  --azul:#2563EB;--rosa:#DB2777;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--papel);color:var(--texto);line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--campo);outline-offset:2px}
+.oculto{display:none !important}
+
+#app{min-height:100vh;display:grid;grid-template-columns:230px 1fr}
+@media (max-width:820px){#app{grid-template-columns:1fr}}
+.side{background:var(--acero-osc);color:#CBD5E1;padding:18px 0;display:flex;flex-direction:column}
+.side-logo{display:flex;align-items:center;gap:9px;padding:0 20px 18px;font-weight:800;font-size:17px;color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-logo .mark{width:28px;height:28px;background:var(--grano);border-radius:6px;display:grid;place-items:center;font-size:15px}
+.nav{padding:14px 0;flex:1}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#CBD5E1;text-decoration:none;font-size:14px;font-weight:500;border-left:3px solid transparent;transition:background .12s}
+.nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav a.activo{background:rgba(183,121,31,.16);color:#fff;border-left-color:var(--grano)}
+.nav .seccion{padding:13px 20px 5px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#64748B;font-family:'IBM Plex Mono',monospace}
+.side-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px}
+.side-foot .nom{color:#fff;font-weight:600}
+.side-foot button{margin-top:9px;background:none;border:1px solid rgba(255,255,255,.18);color:#CBD5E1;padding:6px 11px;border-radius:5px;font-size:12px;width:100%}
+.side-foot button:hover{border-color:var(--grano);color:#fff}
+
+.main{padding:26px 32px;overflow-y:auto}
+@media (max-width:820px){.main{padding:20px 16px}}
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;border-bottom:2px solid var(--linea);padding-bottom:16px;flex-wrap:wrap;gap:12px}
+.topbar h1{font-size:23px;font-weight:800}
+.topbar .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grano);font-weight:600;margin-bottom:3px}
+.btn-accent{background:var(--grano);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-accent:hover{background:#96610F}
+.btn-ghost{background:none;border:1.5px solid var(--linea);color:var(--acero);padding:8px 15px;border-radius:6px;font-weight:600;font-size:13.5px}
+.btn-ghost:hover{border-color:var(--acero)}
+
+/* tarjetas de resumen */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+.card{background:#fff;border:1px solid var(--linea);border-radius:9px;padding:18px}
+.card .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;margin-bottom:6px}
+.card .num{font-size:30px;font-weight:800;line-height:1}
+.card .num.small{font-size:22px}
+.card-click{cursor:pointer;transition:border-color .12s,box-shadow .12s;position:relative}
+.card-click:hover{border-color:var(--grano);box-shadow:0 2px 10px rgba(183,121,31,.12)}
+.card-click .ver-link{margin-top:9px;font-size:11px;font-weight:600;color:var(--grano);font-family:'IBM Plex Mono',monospace}
+.fila-prom td{background:#FEF9F0;border-top:2px solid var(--grano);font-size:13.5px}
+.fila-prom td strong{color:#96610F}
+
+/* filtros */
+.filtros{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filtros input,.filtros select{padding:9px 12px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px;background:#fff}
+
+/* tabla */
+.tabla-wrap{background:#fff;border:1px solid var(--linea);border-radius:8px;overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{text-align:left;padding:11px 14px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;border-bottom:1.5px solid var(--linea);background:#FCFBF8;white-space:nowrap}
+td{padding:11px 14px;font-size:13.5px;border-bottom:1px solid var(--linea)}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:#FCFBF8}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.e-reemplazo{background:#EFF6FF;color:var(--azul)}
+.e-vacia{background:#F5F5F4;color:#57534E}
+.e-servida{background:#FEF3E2;color:var(--grano)}
+.e-gestante{background:#FCE7F3;color:var(--rosa)}
+.e-lactante{background:#EFF3EA;color:var(--campo)}
+.e-descartada,.e-muerta,.e-vendida{background:#FEF2F2;color:var(--alerta)}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(30,41,59,.55);display:none;place-items:center;padding:18px;z-index:100;overflow-y:auto}
+.modal-bg.abierto{display:grid}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--linea);font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff}
+.modal-head button{background:none;border:none;font-size:22px;color:var(--texto-sec);line-height:1}
+.modal-body{padding:20px 22px}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--linea);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media (max-width:560px){.grid2,.grid3{grid-template-columns:1fr}}
+.campo{margin-bottom:12px}
+.campo label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);margin-bottom:5px;font-family:'IBM Plex Mono',monospace}
+.campo input,.campo select,.campo textarea{width:100%;padding:9px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px;background:#fff}
+.campo input:focus,.campo select:focus{border-color:var(--campo);outline:none}
+.msg{margin-top:10px;padding:9px 11px;border-radius:6px;font-size:13px;display:none}
+.msg.error{background:#FEF2F2;color:var(--alerta);border:1px solid #FECACA;display:block}
+.msg.ok{background:#F0FDF4;color:var(--ok);border:1px solid #BBF7D0;display:block}
+.hint{font-size:12px;color:var(--texto-sec);margin-top:4px}
+
+/* ficha */
+.ficha-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px}
+.ficha-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:22px}
+.dato{background:#fff;border:1px solid var(--linea);border-radius:7px;padding:12px 14px}
+.dato .l{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--texto-sec);font-family:'IBM Plex Mono',monospace;margin-bottom:3px}
+.dato .v{font-size:15px;font-weight:600}
+.hist-sec{margin-bottom:20px}
+.hist-sec h3{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.acciones-ciclo{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.vista{display:none}.vista.activa{display:block}
+.vacio{text-align:center;padding:40px 20px;color:var(--texto-sec);font-size:14px}
+.mini-btn{background:none;border:1px solid var(--linea);border-radius:5px;padding:3px 7px;font-size:13px;cursor:pointer;line-height:1}
+.mini-btn:hover{border-color:var(--acero);background:#F5F5F4}
+.mini-btn.del:hover{border-color:var(--alerta);background:#FEF2F2}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="side">
+    <div class="side-logo"><span class="mark">🐷</span> AgroSoft</div>
+    <nav class="nav">
+      <div class="seccion">Operación</div>
+      <a href="index.html">Panel principal</a>
+      <a href="cria.html" class="activo">Granja de cría</a>
+      <a href="consumo.html">Consumo diario</a>
+      <a href="informes.html">Informes de cría</a>
+      <a href="tareas.html">Tareas y vacunación</a>
+      <a href="ceba.html">Ceba</a>
+      <div class="seccion">Cría</div>
+      <a data-vista="censo" class="sub activo">Censo de cerdas</a>
+      <a data-vista="tablero" class="sub">Tablero</a>
+      <a data-vista="salidas" class="sub">Hembras que salieron</a>
+    </nav>
+    <div class="side-foot">
+      <div class="nom" id="foot-nom">—</div>
+      <button id="btn-logout">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ===== CENSO ===== -->
+    <section class="vista activa" data-vista="censo">
+      <div class="topbar">
+        <div><div class="eyebrow">Granja de cría</div><h1>Censo de cerdas</h1></div>
+        <button class="btn-accent" id="btn-nueva-cerda">+ Registrar cerda</button>
+      </div>
+      <div class="cards" id="cards-resumen"></div>
+      <div class="filtros">
+        <input id="f-buscar" placeholder="Buscar por arete…" style="flex:1;min-width:180px">
+        <select id="f-estado">
+          <option value="">Todos los estados</option>
+          <option value="reemplazo">Reemplazo</option>
+          <option value="vacia">Vacía</option>
+          <option value="servida">Servida</option>
+          <option value="gestante">Gestante</option>
+          <option value="lactante">Lactante</option>
+        </select>
+        <button class="btn-ghost" id="btn-filtrar">Filtrar</button>
+      </div>
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Arete</th><th>Raza</th><th>Estado</th><th>Ciclo</th><th>Ubicación</th><th>Ingreso</th></tr></thead>
+          <tbody id="tbody-cerdas"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== DETALLE POR ESTADO ===== -->
+    <section class="vista" data-vista="estado">
+      <div class="topbar">
+        <div><div class="eyebrow">Granja de cría</div><h1 id="estado-titulo">Estado</h1></div>
+        <button class="btn-ghost" id="btn-volver-censo">← Volver al censo</button>
+      </div>
+      <div id="estado-cont"></div>
+    </section>
+
+    <!-- ===== TABLERO ===== -->
+    <section class="vista" data-vista="tablero">
+      <div class="topbar"><div><div class="eyebrow">Granja de cría</div><h1>Tablero</h1></div></div>
+      <div class="cards" id="cards-tablero"></div>
+      <p class="hint">Distribución del hato reproductivo por estado. Se actualiza automáticamente con cada evento registrado.</p>
+    </section>
+
+    <!-- ===== HEMBRAS QUE SALIERON ===== -->
+    <section class="vista" data-vista="salidas">
+      <div class="topbar"><div><div class="eyebrow">Granja de cría</div><h1>Hembras que salieron</h1></div></div>
+      <p class="hint">Cerdas que salieron del hato (descartadas, vendidas o muertas). Si descartaste una por error, usa "↩ Reactivar" para devolverla al hato — su estado se recalcula según sus fechas.</p>
+      <div class="filtros" style="display:flex;gap:10px;margin:14px 0">
+        <select id="sal-filtro" style="padding:8px 11px;border:1.5px solid var(--linea);border-radius:6px;font-size:14px">
+          <option value="">Todas las salidas</option>
+          <option value="descarte">Solo descartes</option>
+          <option value="venta">Solo ventas</option>
+          <option value="muerte">Solo muertes</option>
+        </select>
+      </div>
+      <div class="tabla-wrap"><table><thead><tr><th>Arete</th><th>Tipo</th><th>Fecha</th><th>Ciclo</th><th>Causa</th><th>Observaciones</th><th></th></tr></thead><tbody id="salidas-tabla"></tbody></table></div>
+    </section>
+
+    <!-- ===== FICHA DE CERDA ===== -->
+    <section class="vista" data-vista="ficha">
+      <div class="topbar">
+        <div><div class="eyebrow">Ficha individual</div><h1 id="ficha-titulo">Cerda</h1></div>
+        <button class="btn-ghost" id="btn-volver">← Volver al censo</button>
+      </div>
+      <div class="ficha-datos" id="ficha-datos"></div>
+
+      <div class="acciones-ciclo">
+        <button class="btn-accent" data-evento="servicio">Registrar servicio</button>
+        <button class="btn-accent" data-evento="diagnostico">Diagnóstico de preñez</button>
+        <button class="btn-accent" data-evento="parto">Registrar parto</button>
+        <button class="btn-accent" data-evento="destete">Registrar destete</button>
+        <button class="btn-ghost" data-evento="salida">Salida (muerte/descarte/venta)</button>
+      </div>
+
+      <div class="hist-sec">
+        <h3>💉 Servicios</h3>
+        <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Ciclo</th><th>Tipo</th><th>Verraco/Semen</th><th>Parto probable</th><th></th></tr></thead><tbody id="h-servicios"></tbody></table></div>
+      </div>
+      <div class="hist-sec">
+        <h3>🐷 Partos</h3>
+        <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Ciclo</th><th>Nac. vivos</th><th>Nac. muertos</th><th>Momif.</th><th>Total</th><th></th></tr></thead><tbody id="h-partos"></tbody></table></div>
+      </div>
+      <div class="hist-sec">
+        <h3>🍼 Destetes</h3>
+        <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Ciclo</th><th>Destetados</th><th>Peso camada</th><th></th></tr></thead><tbody id="h-destetes"></tbody></table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-head"><span id="modal-titulo">—</span><button id="modal-cerrar">×</button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const API = window.AGROSOFT_CONFIG.API_URL;
+const $ = s => document.querySelector(s);
+const token = sessionStorage.getItem('agrosoft_token');
+if (!token) { location.href = 'index.html'; }
+
+const api = async (ruta, opts={}) => {
+  const headers = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) };
+  const r = await fetch(API + ruta, { ...opts, headers });
+  const data = await r.json().catch(()=>({}));
+  if (r.status === 401) { location.href='index.html'; return; }
+  if (!r.ok) throw new Error(data.error || 'Error');
+  return data;
+};
+
+let razasCache = [];
+let cerdaActual = null;
+
+// ---- sesión / nombre ----
+(async()=>{ try{ const yo = await api('/api/yo'); $('#foot-nom').textContent = yo.nombre; }catch{} })();
+$('#btn-logout').addEventListener('click', ()=>{ sessionStorage.removeItem('agrosoft_token'); location.href='index.html'; });
+
+// ---- navegación entre vistas ----
+document.querySelectorAll('.nav a.sub').forEach(a=>{
+  a.addEventListener('click', e=>{
+    e.preventDefault();
+    document.querySelectorAll('.nav a.sub').forEach(x=>x.classList.remove('activo'));
+    a.classList.add('activo');
+    mostrarVista(a.dataset.vista);
+  });
+});
+document.addEventListener('change', e=>{ if(e.target && e.target.id==='sal-filtro') cargarSalidas(); });
+function mostrarVista(v){
+  document.querySelectorAll('.vista').forEach(s=>s.classList.toggle('activa', s.dataset.vista===v));
+  if(v==='tablero') cargarTablero();
+  if(v==='censo') cargarCenso();
+  if(v==='salidas') cargarSalidas();
+}
+
+// ---- HEMBRAS QUE SALIERON ----
+async function cargarSalidas(){
+  const filtro = $('#sal-filtro').value;
+  const url = '/api/cria/salidas' + (filtro ? '?tipo='+filtro : '');
+  const s = await api(url);
+  const tbody = $('#salidas-tabla');
+  const pill = t => {
+    const col = t==='descarte'?'#B7791F':t==='venta'?'#3F6212':'#334155';
+    return `<span style="background:${col};color:#fff;padding:2px 9px;border-radius:20px;font-size:12px">${t}</span>`;
+  };
+  tbody.innerHTML = s.length ? s.map(r=>`
+    <tr>
+      <td><strong>${r.arete}</strong></td>
+      <td>${pill(r.tipo)}</td>
+      <td class="mono">${r.fecha?r.fecha.slice(0,10):'—'}</td>
+      <td>${r.ciclo_actual??'—'}</td>
+      <td>${r.causa||'—'}</td>
+      <td style="font-size:12.5px;color:var(--texto-sec)">${r.observaciones||''}</td>
+      <td><button class="btn-ghost" style="padding:5px 10px;font-size:13px" onclick="reactivar(${r.salida_id},'${r.arete}')">↩ Reactivar</button></td>
+    </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--texto-sec);padding:22px">No hay hembras que hayan salido con ese filtro</td></tr>`;
+}
+async function reactivar(salidaId, arete){
+  if(!confirm(`¿Reactivar la cerda ${arete} y devolverla al hato? Su estado se recalculará según sus fechas.`)) return;
+  try{
+    await api('/api/cria/salidas/'+salidaId, {method:'DELETE'});
+    alert(`Cerda ${arete} reactivada. Ya está de vuelta en el hato activo.`);
+    cargarSalidas();
+  }catch(e){ alert(e.message); }
+}
+
+// ---- MODAL ----
+function abrirModal(t,b,f){ $('#modal-titulo').textContent=t; $('#modal-body').innerHTML=b; $('#modal-foot').innerHTML=f; $('#modal-bg').classList.add('abierto'); }
+function cerrarModal(){ $('#modal-bg').classList.remove('abierto'); }
+$('#modal-cerrar').addEventListener('click', cerrarModal);
+$('#modal-bg').addEventListener('click', e=>{ if(e.target===$('#modal-bg')) cerrarModal(); });
+const hoy = () => new Date().toISOString().slice(0,10);
+
+// ---- CENSO ----
+async function cargarRazas(){ razasCache = await api('/api/cria/razas'); }
+function opcionesRaza(sel){ return razasCache.map(r=>`<option value="${r.id}" ${r.id==sel?'selected':''}>${r.nombre}</option>`).join(''); }
+
+async function cargarCenso(){
+  const [resumen, cerdas] = await Promise.all([ api('/api/cria/resumen'), api('/api/cria/cerdas') ]);
+  // tarjetas
+  const estados = Object.fromEntries(resumen.por_estado.map(e=>[e.estado, e.cantidad]));
+  const tarjeta = (lbl, valor, estado) =>
+    `<div class="card${estado?' card-click':''}"${estado?` onclick="verEstado('${estado}')"`:''}>
+       <div class="lbl">${lbl}</div><div class="num${estado?' small':''}">${valor}</div>
+       ${estado?'<div class="ver-link">Ver →</div>':''}</div>`;
+  $('#cards-resumen').innerHTML =
+    tarjeta('Total hato', resumen.total, null) +
+    tarjeta('Gestantes', estados.gestante||0, 'gestante') +
+    tarjeta('Lactantes', estados.lactante||0, 'lactante') +
+    tarjeta('Vacías', estados.vacia||0, 'vacia') +
+    tarjeta('Servidas', estados.servida||0, 'servida') +
+    tarjeta('Reemplazos', estados.reemplazo||0, 'reemplazo');
+  pintarCerdas(cerdas);
+}
+
+// Etiquetas legibles por estado
+const ESTADO_LABEL = { gestante:'Gestantes', lactante:'Lactantes', vacia:'Vacías', servida:'Servidas', reemplazo:'Reemplazos' };
+
+// Abre la vista de detalle de un estado reproductivo
+async function verEstado(estado){
+  mostrarVista('estado');
+  $('#estado-titulo').textContent = ESTADO_LABEL[estado] || estado;
+  $('#estado-cont').innerHTML = '<p class="hint">Cargando…</p>';
+  const data = await api('/api/cria/cerdas-por-estado/'+estado);
+  const cerdas = data.cerdas;
+  if(!cerdas.length){ $('#estado-cont').innerHTML = `<p class="hint">No hay hembras en estado ${ESTADO_LABEL[estado]||estado}.</p>`; return; }
+
+  if(estado === 'lactante'){
+    const p = data.promedio;
+    const fila = c => `
+      <tr data-id="${c.id}">
+        <td><strong>${c.arete}</strong></td>
+        <td>${c.raza||'—'}</td>
+        <td class="mono">${c.ciclo_actual}</td>
+        <td class="mono">${c.fecha_parto?c.fecha_parto.slice(0,10):'—'}</td>
+        <td class="mono"><strong>${c.nacidos_vivos??'—'}</strong></td>
+        <td class="mono">${c.nacidos_muertos??'—'}</td>
+        <td class="mono">${c.momificados??'—'}</td>
+        <td class="mono">${c.nacidos_total??'—'}</td>
+        <td class="mono">${c.peso_camada?Number(c.peso_camada).toFixed(1)+' kg':'—'}</td>
+      </tr>`;
+    $('#estado-cont').innerHTML = `
+      <p class="hint">${cerdas.length} hembras lactantes. Las estadísticas son del último parto de cada una. La última fila es el promedio del grupo.</p>
+      <div class="tabla-wrap"><table>
+        <thead><tr><th>Arete</th><th>Raza</th><th>Ciclo</th><th>Fecha parto</th><th>Nac. vivos</th><th>Muertos</th><th>Momif.</th><th>Total</th><th>Peso camada</th></tr></thead>
+        <tbody>${cerdas.map(fila).join('')}
+          <tr class="fila-prom">
+            <td colspan="4"><strong>PROMEDIO (${p.con_parto} con parto)</strong></td>
+            <td class="mono"><strong>${p.nacidos_vivos}</strong></td>
+            <td class="mono">${p.nacidos_muertos}</td>
+            <td class="mono">${p.momificados}</td>
+            <td class="mono">${p.nacidos_total}</td>
+            <td class="mono">${p.peso_camada} kg</td>
+          </tr>
+        </tbody>
+      </table></div>`;
+  } else {
+    const fila = c => `
+      <tr data-id="${c.id}">
+        <td><strong>${c.arete}</strong></td>
+        <td>${c.raza||'—'}</td>
+        <td class="mono">${c.ciclo_actual}</td>
+        <td>${c.ubicacion||'—'}</td>
+        <td class="mono">${c.fecha_ultimo_servicio?c.fecha_ultimo_servicio.slice(0,10):'—'}</td>
+        <td class="mono">${c.fecha_ultimo_parto?c.fecha_ultimo_parto.slice(0,10):'—'}</td>
+      </tr>`;
+    $('#estado-cont').innerHTML = `
+      <p class="hint">${cerdas.length} hembras en estado ${ESTADO_LABEL[estado]||estado}, ordenadas por el último movimiento registrado.</p>
+      <div class="tabla-wrap"><table>
+        <thead><tr><th>Arete</th><th>Raza</th><th>Ciclo</th><th>Ubicación</th><th>Últ. servicio</th><th>Últ. parto</th></tr></thead>
+        <tbody>${cerdas.map(fila).join('')}</tbody>
+      </table></div>`;
+  }
+  // clic en una fila abre la ficha de la cerda
+  $('#estado-cont').querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',()=>abrirFicha(tr.dataset.id)));
+}
+function pintarCerdas(cerdas){
+  const tb = $('#tbody-cerdas');
+  if(!cerdas.length){ tb.innerHTML = `<tr><td colspan="6" class="vacio">No hay cerdas registradas todavía. Usa "Registrar cerda" para empezar.</td></tr>`; return; }
+  tb.innerHTML = cerdas.map(c=>`
+    <tr data-id="${c.id}">
+      <td><strong>${c.arete}</strong>${c.arete_secundario?` <span class="mono" style="color:var(--texto-sec);font-size:12px">/ ${c.arete_secundario}</span>`:''}</td>
+      <td>${c.raza||'—'}</td>
+      <td><span class="pill e-${c.estado}">${c.estado}</span></td>
+      <td class="mono">${c.ciclo_actual}</td>
+      <td>${c.ubicacion||'—'}</td>
+      <td class="mono" style="font-size:12px">${(c.fecha_ingreso||'').slice(0,10)}</td>
+    </tr>`).join('');
+  tb.querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',()=>abrirFicha(tr.dataset.id)));
+}
+$('#btn-filtrar').addEventListener('click', async ()=>{
+  const p = new URLSearchParams();
+  if($('#f-estado').value) p.set('estado',$('#f-estado').value);
+  if($('#f-buscar').value) p.set('buscar',$('#f-buscar').value);
+  pintarCerdas(await api('/api/cria/cerdas?'+p.toString()));
+});
+$('#f-buscar').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#btn-filtrar').click(); });
+
+// ---- NUEVA CERDA ----
+$('#btn-nueva-cerda').addEventListener('click', ()=>{
+  abrirModal('Registrar cerda', `
+    <div class="grid2">
+      <div class="campo"><label>Arete / ID *</label><input id="c-arete"></div>
+      <div class="campo"><label>ID secundaria</label><input id="c-arete2"></div>
+    </div>
+    <div class="grid2">
+      <div class="campo"><label>Raza</label><select id="c-raza"><option value="">—</option>${opcionesRaza()}</select></div>
+      <div class="campo"><label>Estado inicial</label>
+        <select id="c-estado">
+          <option value="reemplazo">Reemplazo</option>
+          <option value="vacia">Vacía</option>
+          <option value="gestante">Gestante</option>
+          <option value="lactante">Lactante</option>
+        </select></div>
+    </div>
+    <div class="grid2">
+      <div class="campo"><label>Fecha nacimiento</label><input id="c-fnac" type="date"></div>
+      <div class="campo"><label>Fecha ingreso</label><input id="c-fing" type="date" value="${hoy()}"></div>
+    </div>
+    <div class="grid2">
+      <div class="campo"><label>Ubicación / corral</label><input id="c-ubic"></div>
+      <div class="campo"><label>Origen</label>
+        <select id="c-origen"><option value="compra">Compra</option><option value="reposicion_interna">Reposición interna</option><option value="nacida">Nacida en granja</option></select></div>
+    </div>
+    <div class="campo"><label>Observaciones</label><input id="c-obs"></div>
+    <div class="msg" id="c-msg"></div>`,
+    `<button class="btn-ghost" id="c-cancelar">Cancelar</button><button class="btn-accent" id="c-guardar">Registrar</button>`);
+  $('#c-cancelar').addEventListener('click', cerrarModal);
+  $('#c-guardar').addEventListener('click', async ()=>{
+    const body = {
+      arete:$('#c-arete').value.trim(), arete_secundario:$('#c-arete2').value.trim()||null,
+      raza_id:$('#c-raza').value||null, estado:$('#c-estado').value,
+      fecha_nacimiento:$('#c-fnac').value||null, fecha_ingreso:$('#c-fing').value||null,
+      ubicacion:$('#c-ubic').value.trim()||null, origen:$('#c-origen').value,
+      observaciones:$('#c-obs').value.trim()||null
+    };
+    const msg=$('#c-msg'); msg.className='msg';
+    try{ await api('/api/cria/cerdas',{method:'POST',body:JSON.stringify(body)}); cerrarModal(); cargarCenso(); }
+    catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+  });
+});
+
+// ---- FICHA ----
+async function abrirFicha(id){
+  cerdaActual = await api('/api/cria/cerdas/'+id);
+  mostrarVista('ficha');
+  document.querySelectorAll('.vista').forEach(s=>s.classList.remove('activa'));
+  $('.vista[data-vista="ficha"]').classList.add('activa');
+  $('#ficha-titulo').textContent = 'Cerda ' + cerdaActual.arete;
+  $('#ficha-datos').innerHTML = `
+    <div class="dato"><div class="l">Estado</div><div class="v"><span class="pill e-${cerdaActual.estado}">${cerdaActual.estado}</span></div></div>
+    <div class="dato"><div class="l">Raza</div><div class="v">${cerdaActual.raza||'—'}</div></div>
+    <div class="dato"><div class="l">Ciclo actual</div><div class="v">${cerdaActual.ciclo_actual}</div></div>
+    <div class="dato"><div class="l">Ubicación</div><div class="v">${cerdaActual.ubicacion||'—'}</div></div>
+    <div class="dato"><div class="l">Ingreso</div><div class="v mono" style="font-size:13px">${(cerdaActual.fecha_ingreso||'').slice(0,10)}</div></div>`;
+  $('#h-servicios').innerHTML = cerdaActual.servicios.length ? cerdaActual.servicios.map(s=>{
+    const pp = new Date(s.fecha_servicio); pp.setDate(pp.getDate()+114);
+    return `<tr><td class="mono">${s.fecha_servicio.slice(0,10)}</td><td>${s.ciclo}</td><td>${s.tipo}</td><td>${s.verraco||'—'}</td><td class="mono" style="color:var(--rosa)">${pp.toISOString().slice(0,10)}</td>
+      <td style="white-space:nowrap"><button class="mini-btn" onclick='editarEvento("servicio",${JSON.stringify(s).replace(/'/g,"&#39;")})'>✏️</button> <button class="mini-btn del" onclick='eliminarEvento("servicios",${s.id})'>🗑️</button></td></tr>`;
+  }).join('') : `<tr><td colspan="6" class="vacio">Sin servicios registrados</td></tr>`;
+  $('#h-partos').innerHTML = cerdaActual.partos.length ? cerdaActual.partos.map(p=>
+    `<tr><td class="mono">${p.fecha_parto.slice(0,10)}</td><td>${p.ciclo}</td><td>${p.nacidos_vivos}</td><td>${p.nacidos_muertos}</td><td>${p.momificados}</td><td><strong>${p.lechones_totales}</strong></td>
+      <td style="white-space:nowrap"><button class="mini-btn" onclick='editarEvento("parto",${JSON.stringify(p).replace(/'/g,"&#39;")})'>✏️</button> <button class="mini-btn del" onclick='eliminarEvento("partos",${p.id})'>🗑️</button></td></tr>`
+  ).join('') : `<tr><td colspan="7" class="vacio">Sin partos registrados</td></tr>`;
+  $('#h-destetes').innerHTML = cerdaActual.destetes.length ? cerdaActual.destetes.map(d=>
+    `<tr><td class="mono">${d.fecha_destete.slice(0,10)}</td><td>${d.ciclo}</td><td>${d.lechones_destetados}</td><td>${d.peso_camada||'—'}</td>
+      <td style="white-space:nowrap"><button class="mini-btn" onclick='editarEvento("destete",${JSON.stringify(d).replace(/'/g,"&#39;")})'>✏️</button> <button class="mini-btn del" onclick='eliminarEvento("destetes",${d.id})'>🗑️</button></td></tr>`
+  ).join('') : `<tr><td colspan="5" class="vacio">Sin destetes registrados</td></tr>`;
+}
+$('#btn-volver').addEventListener('click', ()=>{ mostrarVista('censo'); document.querySelectorAll('.nav a.sub').forEach(x=>x.classList.remove('activo')); $('.nav a[data-vista="censo"]').classList.add('activo'); });
+$('#btn-volver-censo').addEventListener('click', ()=>{ mostrarVista('censo'); document.querySelectorAll('.nav a.sub').forEach(x=>x.classList.remove('activo')); $('.nav a[data-vista="censo"]').classList.add('activo'); });
+
+// ---- EVENTOS DEL CICLO ----
+document.querySelectorAll('[data-evento]').forEach(b=>b.addEventListener('click', ()=>abrirEvento(b.dataset.evento)));
+
+function abrirEvento(tipo){
+  if(!cerdaActual) return;
+  const forms = {
+    servicio: {
+      titulo:'Registrar servicio (inseminación)',
+      body:`<div class="grid2">
+              <div class="campo"><label>Fecha de servicio *</label><input id="ev-fecha" type="date" value="${hoy()}"></div>
+              <div class="campo"><label>Tipo</label><select id="ev-tipo"><option value="IA">Inseminación artificial</option><option value="monta">Monta natural</option></select></div>
+            </div>
+            <div class="grid2">
+              <div class="campo"><label>Verraco / Semen</label><input id="ev-verraco"></div>
+              <div class="campo"><label>Dosis</label><input id="ev-dosis" type="number" min="0"></div>
+            </div>
+            <div class="campo"><label>Operario</label><input id="ev-operario"></div>
+            <p class="hint">La fecha probable de parto se calculará a 114 días del servicio.</p>`,
+      ruta:'/api/cria/servicios',
+      datos:()=>({ cerda_id:cerdaActual.id, fecha_servicio:$('#ev-fecha').value, tipo:$('#ev-tipo').value,
+                   verraco:$('#ev-verraco').value.trim()||null, dosis:$('#ev-dosis').value||null, operario:$('#ev-operario').value.trim()||null })
+    },
+    diagnostico: {
+      titulo:'Diagnóstico de preñez',
+      body:`<div class="grid2">
+              <div class="campo"><label>Fecha *</label><input id="ev-fecha" type="date" value="${hoy()}"></div>
+              <div class="campo"><label>Resultado *</label><select id="ev-res"><option value="positivo">Positivo (gestante)</option><option value="negativo">Negativo (vacía)</option><option value="dudoso">Dudoso</option></select></div>
+            </div>
+            <div class="campo"><label>Método</label><select id="ev-metodo"><option value="ecografia">Ecografía</option><option value="retorno_celo">Retorno a celo</option><option value="otro">Otro</option></select></div>`,
+      ruta:'/api/cria/diagnosticos',
+      datos:()=>{ const s=cerdaActual.servicios[0]; return { cerda_id:cerdaActual.id, servicio_id:s?s.id:null, fecha:$('#ev-fecha').value, resultado:$('#ev-res').value, metodo:$('#ev-metodo').value }; }
+    },
+    parto: {
+      titulo:'Registrar parto',
+      body:`<div class="campo"><label>Fecha de parto *</label><input id="ev-fecha" type="date" value="${hoy()}"></div>
+            <div class="grid3">
+              <div class="campo"><label>Nacidos vivos</label><input id="ev-vivos" type="number" min="0" value="0"></div>
+              <div class="campo"><label>Nacidos muertos</label><input id="ev-muertos" type="number" min="0" value="0"></div>
+              <div class="campo"><label>Momificados</label><input id="ev-momif" type="number" min="0" value="0"></div>
+            </div>
+            <div class="campo"><label>Peso total camada (kg)</label><input id="ev-peso" type="number" step="0.01" min="0"></div>`,
+      ruta:'/api/cria/partos',
+      datos:()=>{ const s=cerdaActual.servicios[0]; return { cerda_id:cerdaActual.id, servicio_id:s?s.id:null, fecha_parto:$('#ev-fecha').value,
+                   nacidos_vivos:+$('#ev-vivos').value, nacidos_muertos:+$('#ev-muertos').value, momificados:+$('#ev-momif').value, peso_camada:$('#ev-peso').value||null }; }
+    },
+    destete: {
+      titulo:'Registrar destete',
+      body:`<div class="campo"><label>Fecha de destete *</label><input id="ev-fecha" type="date" value="${hoy()}"></div>
+            <div class="grid2">
+              <div class="campo"><label>Lechones destetados</label><input id="ev-dest" type="number" min="0" value="0"></div>
+              <div class="campo"><label>Peso total camada (kg)</label><input id="ev-peso" type="number" step="0.01" min="0"></div>
+            </div>
+            ${cerdaActual.partos.length? '' : '<p class="hint" style="color:var(--alerta)">Esta cerda no tiene partos registrados. Registra el parto antes del destete.</p>'}`,
+      ruta:'/api/cria/destetes',
+      datos:()=>{ const p=cerdaActual.partos[0]; return { parto_id:p?p.id:null, cerda_id:cerdaActual.id, fecha_destete:$('#ev-fecha').value,
+                   lechones_destetados:+$('#ev-dest').value, peso_camada:$('#ev-peso').value||null }; }
+    },
+    salida: {
+      titulo:'Salida de la cerda',
+      body:`<div class="grid2">
+              <div class="campo"><label>Fecha *</label><input id="ev-fecha" type="date" value="${hoy()}"></div>
+              <div class="campo"><label>Tipo *</label><select id="ev-tipo"><option value="descarte">Descarte</option><option value="muerte">Muerte</option><option value="venta">Venta</option></select></div>
+            </div>
+            <div class="campo"><label>Causa</label><input id="ev-causa"></div>
+            <div class="grid2">
+              <div class="campo"><label>Valor venta ($)</label><input id="ev-valor" type="number" step="0.01"></div>
+              <div class="campo"><label>Peso (kg)</label><input id="ev-peso" type="number" step="0.01"></div>
+            </div>
+            <p class="hint">Registrar una salida retira la cerda del hato activo.</p>`,
+      ruta:'/api/cria/salidas',
+      datos:()=>({ cerda_id:cerdaActual.id, fecha:$('#ev-fecha').value, tipo:$('#ev-tipo').value,
+                   causa:$('#ev-causa').value.trim()||null, valor_venta:$('#ev-valor').value||null, peso:$('#ev-peso').value||null })
+    }
+  };
+  const cfg = forms[tipo];
+  abrirModal(cfg.titulo, cfg.body + `<div class="msg" id="ev-msg"></div>`,
+    `<button class="btn-ghost" id="ev-cancelar">Cancelar</button><button class="btn-accent" id="ev-guardar">Guardar</button>`);
+  $('#ev-cancelar').addEventListener('click', cerrarModal);
+  $('#ev-guardar').addEventListener('click', async ()=>{
+    const msg=$('#ev-msg'); msg.className='msg';
+    try{ await api(cfg.ruta,{method:'POST',body:JSON.stringify(cfg.datos())}); cerrarModal(); abrirFicha(cerdaActual.id); }
+    catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+  });
+}
+
+// ---- TABLERO ----
+async function cargarTablero(){
+  const r = await api('/api/cria/resumen');
+  const estados = Object.fromEntries(r.por_estado.map(e=>[e.estado, e.cantidad]));
+  const orden = ['reemplazo','vacia','servida','gestante','lactante'];
+  $('#cards-tablero').innerHTML =
+    `<div class="card"><div class="lbl">Total hato activo</div><div class="num">${r.total}</div></div>` +
+    orden.map(e=>`<div class="card"><div class="lbl">${e}</div><div class="num small">${estados[e]||0}</div></div>`).join('');
+}
+
+// ---- EDITAR / ELIMINAR EVENTOS ----
+function editarEvento(tipo, ev){
+  const campos = {
+    servicio: {
+      titulo:'Editar servicio', ruta:'/api/cria/servicios/'+ev.id,
+      body:`<div class="grid2">
+              <div class="campo"><label>Fecha de servicio</label><input id="ed-fecha" type="date" value="${ev.fecha_servicio?ev.fecha_servicio.slice(0,10):''}"></div>
+              <div class="campo"><label>Tipo</label><select id="ed-tipo"><option value="IA"${ev.tipo==='IA'?' selected':''}>Inseminación artificial</option><option value="monta"${ev.tipo==='monta'?' selected':''}>Monta natural</option></select></div>
+            </div>
+            <div class="grid2">
+              <div class="campo"><label>Verraco / Semen</label><input id="ed-verraco" value="${ev.verraco||''}"></div>
+              <div class="campo"><label>Operario</label><input id="ed-operario" value="${ev.operario||''}"></div>
+            </div>`,
+      datos:()=>({ fecha_servicio:$('#ed-fecha').value, tipo:$('#ed-tipo').value, verraco:$('#ed-verraco').value.trim()||null, operario:$('#ed-operario').value.trim()||null })
+    },
+    parto: {
+      titulo:'Editar parto', ruta:'/api/cria/partos/'+ev.id,
+      body:`<div class="campo"><label>Fecha de parto</label><input id="ed-fecha" type="date" value="${ev.fecha_parto?ev.fecha_parto.slice(0,10):''}"></div>
+            <div class="grid3">
+              <div class="campo"><label>Nacidos vivos</label><input id="ed-vivos" type="number" min="0" value="${ev.nacidos_vivos}"></div>
+              <div class="campo"><label>Nacidos muertos</label><input id="ed-muertos" type="number" min="0" value="${ev.nacidos_muertos}"></div>
+              <div class="campo"><label>Momificados</label><input id="ed-momif" type="number" min="0" value="${ev.momificados}"></div>
+            </div>
+            <div class="campo"><label>Peso camada (kg)</label><input id="ed-peso" type="number" step="0.01" value="${ev.peso_camada||''}"></div>`,
+      datos:()=>({ fecha_parto:$('#ed-fecha').value, nacidos_vivos:+$('#ed-vivos').value, nacidos_muertos:+$('#ed-muertos').value, momificados:+$('#ed-momif').value, peso_camada:$('#ed-peso').value||null })
+    },
+    destete: {
+      titulo:'Editar destete', ruta:'/api/cria/destetes/'+ev.id,
+      body:`<div class="campo"><label>Fecha de destete</label><input id="ed-fecha" type="date" value="${ev.fecha_destete?ev.fecha_destete.slice(0,10):''}"></div>
+            <div class="grid2">
+              <div class="campo"><label>Lechones destetados</label><input id="ed-dest" type="number" min="0" value="${ev.lechones_destetados}"></div>
+              <div class="campo"><label>Peso camada (kg)</label><input id="ed-peso" type="number" step="0.01" value="${ev.peso_camada||''}"></div>
+            </div>`,
+      datos:()=>({ fecha_destete:$('#ed-fecha').value, lechones_destetados:+$('#ed-dest').value, peso_camada:$('#ed-peso').value||null })
+    }
+  };
+  const cfg = campos[tipo];
+  abrirModal(cfg.titulo, cfg.body+`<div class="msg" id="ed-msg"></div>`,
+    `<button class="btn-ghost" id="ed-cancelar">Cancelar</button><button class="btn-accent" id="ed-guardar">Guardar cambios</button>`);
+  $('#ed-cancelar').addEventListener('click', cerrarModal);
+  $('#ed-guardar').addEventListener('click', async ()=>{
+    const msg=$('#ed-msg'); msg.className='msg';
+    try{ await api(cfg.ruta,{method:'PUT',body:JSON.stringify(cfg.datos())}); cerrarModal(); abrirFicha(cerdaActual.id); }
+    catch(e){ msg.className='msg error'; msg.textContent=e.message; }
+  });
+}
+
+async function eliminarEvento(tipo, id){
+  const nombre = { servicios:'servicio', partos:'parto', destetes:'destete' }[tipo];
+  if(!confirm(`¿Eliminar este ${nombre}? Esta acción no se puede deshacer y recalculará el estado de la cerda.`)) return;
+  try{ await api('/api/cria/'+tipo+'/'+id,{method:'DELETE'}); abrirFicha(cerdaActual.id); }
+  catch(e){ alert(e.message); }
+}
+
+// ---- init ----
+(async()=>{ await cargarRazas(); cargarCenso(); })();
+</script>
+</body>
+</html>
