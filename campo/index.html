@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3F6212">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>AgroSoft Campo</title>
+<style>
+:root{
+  --verde:#4CBB45; --campo:#3F6212; --grano:#B7791F; --tinta:#1F2A1A; --suave:#5C6657;
+  --papel:#FAF9F5; --tarjeta:#FFFFFF; --linea:#DDD9CC; --rojo:#B3261E; --rojo-bg:#FDECEA;
+  --ok-bg:#E8F5E6; --aviso-bg:#FEF3DC; --radio:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--papel);color:var(--tinta);
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit;color:inherit}
+h1{font-size:22px;margin:0}
+h2{font-size:15px;margin:22px 0 8px;color:var(--suave);text-transform:uppercase;letter-spacing:.06em}
+
+/* Barra superior */
+.top{position:sticky;top:0;z-index:20;background:var(--campo);color:#fff;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:10px}
+.top .tit{flex:1;min-width:0}
+.top .tit b{display:block;font-size:17px;line-height:1.1}
+.top .tit small{opacity:.85;font-size:12.5px}
+.top .atras{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;width:42px;height:42px;font-size:20px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:13px;font-weight:600;border:0}
+.chip.on{background:var(--verde);color:#0F2A0C}
+.chip.off{background:#F2C14E;color:#4A3200}
+.chip.pend{background:#fff;color:var(--campo)}
+
+main{padding:14px 16px 40px;max-width:560px;margin:0 auto}
+
+/* Tarjetas / mosaicos */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:var(--tarjeta);border:1.5px solid var(--linea);border-radius:var(--radio);
+  padding:16px 12px;min-height:104px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;
+  cursor:pointer;position:relative}
+.tile:active{background:var(--ok-bg)}
+.tile .ic{font-size:30px;line-height:1}
+.tile b{font-size:16px}
+.tile small{color:var(--suave);font-size:12.5px}
+.badge{position:absolute;top:8px;right:8px;background:var(--rojo);color:#fff;border-radius:999px;
+  min-width:22px;height:22px;padding:0 6px;font-size:12.5px;font-weight:700;display:grid;place-items:center}
+.badge.v{background:var(--campo)}
+.tile.ancho{grid-column:1 / -1;min-height:76px;flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;padding-right:52px}
+.tile.ancho .badge{top:50%;right:14px;transform:translateY(-50%);min-width:28px;height:28px;font-size:14px}
+
+.card{background:var(--tarjeta);border:1.5px solid var(--linea);border-radius:var(--radio);padding:14px;margin-bottom:12px}
+.aviso{background:var(--aviso-bg);border:1.5px solid #E8C26A;border-radius:var(--radio);padding:12px 14px;margin-bottom:12px;font-size:14.5px}
+.aviso.rojo{background:var(--rojo-bg);border-color:#E3A29D}
+.aviso.ok{background:var(--ok-bg);border-color:#A9D8A5}
+.hint{color:var(--suave);font-size:14px;margin:4px 0 10px}
+
+/* Formularios */
+label.f{display:block;margin:14px 0 6px;font-weight:600;font-size:15px}
+label.f small{font-weight:400;color:var(--suave)}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],select,textarea,.pick{
+  width:100%;min-height:52px;padding:12px 14px;border:1.5px solid var(--linea);border-radius:var(--radio);
+  background:#fff;font-size:17px}
+textarea{min-height:76px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:3px solid #B9E4B5;border-color:var(--verde)}
+.pick{text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pick.vacio{color:var(--suave)}
+.fila2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fila3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{flex:1;min-width:84px;min-height:50px;border:1.5px solid var(--linea);background:#fff;border-radius:var(--radio);font-weight:600;cursor:pointer}
+.seg button.sel{background:var(--campo);border-color:var(--campo);color:#fff}
+.seg button.sel.rojo{background:var(--rojo);border-color:var(--rojo)}
+.seg button.sel.ambar{background:var(--grano);border-color:var(--grano)}
+
+.btn{display:block;width:100%;min-height:54px;border:0;border-radius:var(--radio);background:var(--campo);color:#fff;
+  font-weight:700;font-size:17px;margin-top:18px;cursor:pointer}
+.btn:active{filter:brightness(.92)}
+.btn.sec{background:#fff;color:var(--campo);border:1.5px solid var(--campo)}
+.btn.chico{display:inline-block;width:auto;min-height:44px;padding:0 16px;margin:0;font-size:15px}
+.btn[disabled]{opacity:.5}
+.err{color:var(--rojo);font-weight:600;margin-top:12px;font-size:15px}
+
+/* Selector de hembra (hoja a pantalla completa) */
+.hoja{position:fixed;inset:0;background:var(--papel);z-index:50;display:flex;flex-direction:column}
+.hoja header{background:var(--campo);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;display:flex;gap:8px;align-items:center}
+.hoja header input{flex:1;min-height:46px;border-radius:10px;border:0;padding:0 12px}
+.hoja header button{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;height:46px;padding:0 14px;font-weight:600}
+.hoja .lista{flex:1;overflow:auto;padding:8px 12px 30px}
+.hoja .filtro{padding:10px 14px;background:#fff;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center;font-size:14.5px}
+.it{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid var(--linea);
+  border-radius:var(--radio);padding:12px 14px;margin:8px 0;width:100%;text-align:left;min-height:62px;cursor:pointer}
+.it b{font-size:18px}
+.it small{display:block;color:var(--suave);font-size:13.5px}
+.est{font-size:12.5px;font-weight:700;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.est.servida{background:#E7EEFF;color:#1F3FA0}.est.gestante{background:#FBE6F1;color:#9B1C62}
+.est.lactante{background:#FEF3DC;color:#8A5A00}.est.vacia{background:#EEE;color:#444}.est.reemplazo{background:#E8F5E6;color:#256B21}
+
+/* Recelos */
+.rec{background:#fff;border:1.5px solid var(--linea);border-radius:var(--radio);padding:12px;margin:10px 0}
+.rec .cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.rec .cab b{font-size:20px}
+.rec .dia{font-size:13.5px;color:var(--suave)}
+.rec .dia.vent{color:#8A5A00;font-weight:700}
+.rec .bt{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rec .bt button{min-height:56px;border-radius:var(--radio);border:1.5px solid var(--linea);background:#fff;font-weight:700;font-size:16px;cursor:pointer}
+.rec .bt button.celo.sel{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.rec .bt button.sin.sel{background:var(--campo);border-color:var(--campo);color:#fff}
+.rec .nota{font-size:13.5px;margin-top:8px;color:var(--rojo);font-weight:600}
+.rec .nota a{color:var(--campo);text-decoration:underline;font-weight:700}
+.prog{height:8px;background:#E9E6DA;border-radius:6px;overflow:hidden;margin:6px 0 12px}
+.prog i{display:block;height:100%;background:var(--verde)}
+
+/* Listas simples */
+.li{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border:1.5px solid var(--linea);
+  border-radius:var(--radio);padding:12px 14px;margin:8px 0}
+.li small{display:block;color:var(--suave);font-size:13.5px}
+.li.error{border-color:#E3A29D;background:var(--rojo-bg)}
+.li.enviado{opacity:.7}
+.mini{border:1.5px solid var(--linea);background:#fff;border-radius:10px;min-height:44px;padding:0 14px;font-weight:700;cursor:pointer}
+.mini.ok{background:var(--campo);border-color:var(--campo);color:#fff}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:80;
+  background:#1F2A1A;color:#fff;padding:13px 18px;border-radius:12px;font-weight:600;max-width:90vw;text-align:center;
+  box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.login{padding-top:34px}
+.login .logo{width:84px;height:84px;border-radius:20px;display:block;margin:0 auto 12px}
+.centro{text-align:center}
+.pie{margin-top:26px;display:grid;gap:10px}
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script src="../config.js"></script>
+<script>
+// ============================================================
+//  AgroSoft Campo — app móvil (PWA) para la persona de la granja
+//  - Funciona sin señal: guarda los registros en el celular y los envía después.
+//  - Cada registro lleva una clave única: si se reenvía, el servidor no lo duplica.
+// ============================================================
+'use strict';
+
+// ---------- Utilidades ----------
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
+const pad = n => String(n).padStart(2, '0');
+const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const utc = f => { const [y, m, d] = f.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+const diasDesde = f => f ? Math.floor((utc(hoy()) - utc(f.slice(0, 10))) / 864e5) : null;
+const sumaDias = (f, n) => { const t = new Date(utc(f) + n * 864e5); return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`; };
+const fmt = f => f ? `${f.slice(8, 10)}/${f.slice(5, 7)}` : '—';
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+const num = v => (v === '' || v == null) ? null : Number(String(v).replace(',', '.'));
+
+const DIAS_GESTACION = 114;
+const ESTADO_TXT = { servida:'Servida', gestante:'Gestante', lactante:'Lactante', vacia:'Vacía', reemplazo:'Reemplazo' };
+
+// ---------- Dirección del servidor ----------
+let API = (window.AGROSOFT_CONFIG && AGROSOFT_CONFIG.API_URL) || LS.get('ag_api', '') || '';
+if (/localhost|127\.0\.0\.1/.test(API) && !/^(localhost|127\.)/.test(location.hostname)) API = 'https://api.agrofranpabel.com';
+if (!API) API = 'https://api.agrofranpabel.com';
+LS.set('ag_api', API);
+
+// ---------- Estado ----------
+const S = {
+  token: LS.get('ag_token', null),
+  usuario: LS.get('ag_usuario', null),
+  datos: LS.get('ag_datos', null),         // copia del servidor (hembras, lotes, bandas…)
+  tareas: LS.get('ag_tareas', null),
+  tareasHechas: LS.get('ag_tareas_hechas', []),
+  cola: LS.get('ag_cola', []),             // registros pendientes / enviados / con error
+  vista: 'home', form: null, sheet: null,
+  recel: { jornada: new Date().getHours() < 12 ? 'AM' : 'PM', fecha: hoy(), filtro: 'servida' },
+  sync: false, necesitaLogin: false, instalar: null, toast: null, loginErr: ''
+};
+const guardarCola = () => LS.set('ag_cola', S.cola);
+
+// ---------- Red ----------
+async function llamar(metodo, ruta, body, clave) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 25000);
+  try {
+    const r = await fetch(API + ruta, {
+      method: metodo, signal: ctl.signal,
+      headers: Object.assign({ 'Content-Type': 'application/json' },
+        S.token ? { Authorization: 'Bearer ' + S.token } : {},
+        clave ? { 'X-Clave-Cliente': clave } : {}),
+      body: body ? JSON.stringify(body) : undefined
+    });
+    let data = null; try { data = await r.json(); } catch {}
+    return { ok: r.ok, status: r.status, data };
+  } finally { clearTimeout(t); }
+}
+
+async function traerDatos() {
+  const r = await llamar('GET', '/api/campo/datos');
+  if (r.status === 401) { S.necesitaLogin = true; throw new Error('401'); }
+  if (!r.ok) throw new Error('No se pudieron traer los datos');
+  S.datos = Object.assign(r.data, { guardado: Date.now() });
+  LS.set('ag_datos', S.datos);
+  // Tareas sanitarias: vencidas de los últimos 14 días y las de la próxima semana
+  try {
+    const t = await llamar('GET', `/api/tareas/calendario?desde=${sumaDias(hoy(), -14)}&hasta=${sumaDias(hoy(), 7)}`);
+    if (t.ok) { S.tareas = Object.assign(t.data, { guardado: Date.now() }); LS.set('ag_tareas', S.tareas); }
+  } catch {}
+  return S.datos;
+}
+
+// ---------- Datos con los registros pendientes ya aplicados ----------
+// Así la persona ve la hembra "servida" apenas la registra, aunque no haya señal.
+function cerdasVista() {
+  const base = (S.datos?.cerdas || []).map(c => Object.assign({}, c, { recelos: (c.recelos || []).slice() }));
+  const porId = new Map(base.map(c => [c.id, c]));
+  const guardado = S.datos?.guardado || 0;
+  for (const op of S.cola) {
+    if (op.estado === 'error') continue;
+    if (op.estado === 'enviado' && !(op.enviado_en > guardado)) continue;
+    const b = op.body || {};
+    if (op.tipo === 'reemplazo') {          // hembra nueva aún sin enviar: aparece ya en la lista
+      const rz = (S.datos?.razas || []).find(r => r.id === b.raza_id);
+      porId.set(op.temp_id, { id: op.temp_id, arete: b.arete, estado: 'reemplazo', ciclo_actual: 0, raza: rz?.nombre || '', recelos: [],
+        fecha_ultimo_servicio: null, fecha_ultimo_parto: null, fecha_ultimo_destete: null, mort_lactancia: 0, ultimo_peso: b.peso_ingreso ? { fecha: b.fecha_ingreso, peso: b.peso_ingreso } : null });
+      continue;
+    }
+    const c = porId.get(b.cerda_id);
+    if (!c) continue;
+    if (op.tipo === 'servicio') { c.estado = 'servida'; c.fecha_ultimo_servicio = b.fecha_servicio; c.recelos = []; }
+    else if (op.tipo === 'diagnostico') { if (b.resultado === 'positivo') c.estado = 'gestante'; else if (b.resultado === 'negativo') c.estado = 'vacia'; }
+    else if (op.tipo === 'parto') { c.estado = 'lactante'; c.fecha_ultimo_parto = b.fecha_parto; c.ultimo_parto_vivos = b.nacidos_vivos; c.ultimo_parto_id = null; c.mort_lactancia = 0; }
+    else if (op.tipo === 'mortalidad') { c.mort_lactancia = (c.mort_lactancia || 0) + b.cantidad; }
+    else if (op.tipo === 'destete') { c.estado = 'vacia'; c.fecha_ultimo_destete = b.fecha_destete; }
+    else if (op.tipo === 'salida') { porId.delete(c.id); }
+    else if (op.tipo === 'recelo') {
+      c.recelos = c.recelos.filter(x => !(x.fecha === b.fecha && x.jornada === b.jornada));
+      c.recelos.push({ fecha: b.fecha, jornada: b.jornada, resultado: b.resultado });
+    }
+  }
+  return [...porId.values()].sort((a, b) => a.arete.localeCompare(b.arete, 'es', { numeric: true }));
+}
+const cerdaPorId = id => cerdasVista().find(c => c.id === id);
+
+const vivosActuales = c => c.ultimo_parto_vivos == null ? null : Math.max(0, c.ultimo_parto_vivos - (c.mort_lactancia || 0));
+function infoCerda(c) {
+  if (c.estado === 'servida') { const d = diasDesde(c.fecha_ultimo_servicio); return `Servida hace ${d} d (${fmt(c.fecha_ultimo_servicio)})`; }
+  if (c.estado === 'gestante') { const d = diasDesde(c.fecha_ultimo_servicio); return `Día ${d} de ${DIAS_GESTACION} · parto ~${fmt(sumaDias(c.fecha_ultimo_servicio, DIAS_GESTACION))}`; }
+  if (c.estado === 'lactante') { const d = diasDesde(c.fecha_ultimo_parto); return `Parto hace ${d} d · ${vivosActuales(c) ?? '?'} lechones vivos`; }
+  if (c.estado === 'vacia') { return c.fecha_ultimo_destete ? `Vacía · destete hace ${diasDesde(c.fecha_ultimo_destete)} d` : 'Vacía'; }
+  return ESTADO_TXT[c.estado] || c.estado;
+}
+
+// ---------- Pendientes del día (calculados con las fechas) ----------
+function calcularAlertas() {
+  const out = [];
+  for (const c of cerdasVista()) {
+    if (c.estado === 'servida' && c.fecha_ultimo_servicio) {
+      const d = diasDesde(c.fecha_ultimo_servicio);
+      if (d >= 28) out.push({ k: 'eco', c, d, txt: `Confirmar preñez (día ${d})`, accion: 'diagnostico', pr: 2 });
+      else if (d >= 17) out.push({ k: 'recelo', c, d, txt: `Revisar recelo AM/PM (día ${d})`, accion: 'recelos', pr: 1 });
+    } else if (c.estado === 'gestante' && c.fecha_ultimo_servicio) {
+      const d = diasDesde(c.fecha_ultimo_servicio);
+      if (d >= 108) out.push({ k: 'parto', c, d, txt: `Próxima a parir (día ${d} de ${DIAS_GESTACION})`, accion: 'parto', pr: 0 });
+    } else if (c.estado === 'lactante' && c.fecha_ultimo_parto) {
+      const d = diasDesde(c.fecha_ultimo_parto);
+      if (d >= 21) out.push({ k: 'destete', c, d, txt: `Lista para destetar (${d} días de lactancia)`, accion: 'destete', pr: 3 });
+    } else if (c.estado === 'vacia' && c.fecha_ultimo_destete) {
+      const d = diasDesde(c.fecha_ultimo_destete);
+      if (d >= 3 && d <= 10) out.push({ k: 'celo', c, d, txt: `Vigilar celo (destetada hace ${d} d)`, accion: 'recelos_vacia', pr: 4 });
+    }
+  }
+  return out.sort((a, b) => a.pr - b.pr || b.d - a.d);
+}
+
+function tareasPendientes() {
+  const hechas = new Set(S.tareasHechas);
+  for (const op of S.cola) if (op.tipo === 'tarea' && op.estado !== 'error') hechas.add(op.clave_tarea);
+  return (S.tareas?.eventos || []).filter(e => !hechas.has(`${e.tarea_id}-${e.cerda_id}-${e.fecha}`));
+}
+
+// ---------- Definición de formularios ----------
+const hoyMax = () => hoy();
+const FORMS = {
+  servicio: {
+    titulo: 'Servicio', icono: '💉', ayuda: 'Hembras vacías o de reemplazo. También sirve para repetir una monta o inseminación.',
+    campos: [
+      { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: ['vacia', 'reemplazo', 'servida'] },
+      { k: 'fecha', t: 'fecha', label: 'Fecha del servicio' },
+      { k: 'tipo', t: 'seg', label: 'Tipo', opts: [['IA', 'Inseminación'], ['Monta', 'Monta']], def: 'IA' },
+      { k: 'verraco', t: 'texto', label: 'Verraco / pajilla', opc: true },
+      { k: 'dosis', t: 'texto', label: 'Dosis', opc: true },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: (v, u) => ({ ruta: '/api/cria/servicios',
+      body: { cerda_id: v.cerda_id, fecha_servicio: v.fecha, tipo: v.tipo, verraco: v.verraco || null, dosis: v.dosis || null, operario: u?.nombre || null, observaciones: v.obs || null },
+      resumen: c => `Servicio · ${c.arete} · ${fmt(v.fecha)}` })
+  },
+  diagnostico: {
+    titulo: 'Diagnóstico de preñez', icono: '🩺', ayuda: 'Positivo la pasa a gestante. Negativo la devuelve a vacía para un nuevo servicio.',
+    campos: [
+      { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: ['servida', 'gestante'] },
+      { k: 'fecha', t: 'fecha', label: 'Fecha' },
+      { k: 'resultado', t: 'seg', label: 'Resultado', def: 'positivo', opts: [['positivo', 'Preñada', 'ok'], ['negativo', 'Vacía', 'rojo'], ['dudoso', 'Dudoso', 'ambar']] },
+      { k: 'metodo', t: 'seg', label: 'Método', def: 'ecografia', opts: [['ecografia', 'Ecografía'], ['retorno_celo', 'Retorno a celo'], ['otro', 'Otro']] },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: (v, u, c) => ({ ruta: '/api/cria/diagnosticos',
+      body: { cerda_id: v.cerda_id, servicio_id: c?.ultimo_servicio_id || null, fecha: v.fecha, resultado: v.resultado, metodo: v.metodo, observaciones: v.obs || null },
+      resumen: c => `Diagnóstico ${v.resultado} · ${c.arete}` })
+  },
+  parto: {
+    titulo: 'Parto', icono: '🐖', ayuda: 'La hembra pasa a lactante.',
+    campos: [
+      { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: ['gestante', 'servida'] },
+      { k: 'fecha', t: 'fecha', label: 'Fecha del parto' },
+      { k: 'vivos', t: 'grupo3', label: 'Lechones', items: [['vivos', 'Vivos', true], ['muertos', 'Muertos', false], ['momif', 'Momificados', false]] },
+      { k: 'peso', t: 'dec', label: 'Peso de la camada (kg)', opc: true },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: (v, u, c) => ({ ruta: '/api/cria/partos',
+      body: { cerda_id: v.cerda_id, servicio_id: c?.ultimo_servicio_id || null, fecha_parto: v.fecha,
+        nacidos_vivos: num(v.vivos) ?? 0, nacidos_muertos: num(v.muertos) ?? 0, momificados: num(v.momif) ?? 0,
+        peso_camada: num(v.peso), observaciones: v.obs || null },
+      resumen: c => `Parto · ${c.arete} · ${num(v.vivos) ?? 0} vivos` })
+  },
+  destete: {
+    titulo: 'Destete', icono: '🍼', ayuda: 'Solo hembras lactantes. La hembra queda vacía.',
+    campos: [
+      { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: ['lactante'] },
+      { k: 'fecha', t: 'fecha', label: 'Fecha del destete' },
+      { k: 'lechones', t: 'int', label: 'Lechones destetados' },
+      { k: 'peso', t: 'dec', label: 'Peso de la camada (kg)', opc: true },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: (v, u, c) => ({ ruta: '/api/cria/destetes', resolverParto: !c?.ultimo_parto_id,
+      body: { parto_id: c?.ultimo_parto_id || null, cerda_id: v.cerda_id, fecha_destete: v.fecha,
+        lechones_destetados: num(v.lechones) ?? 0, peso_camada: num(v.peso), observaciones: v.obs || null },
+      resumen: c => `Destete · ${c.arete} · ${num(v.lechones) ?? 0} lechones` })
+  },
+  alim_cria: {
+    titulo: 'Alimentación cría', icono: '🌾', ayuda: 'Bultos de alimento dados en la granja de cría.',
+    campos: [
+      { k: 'fecha', t: 'fecha', label: 'Fecha' },
+      { k: 'fase', t: 'seg', label: 'Fase', def: 'gestacion', opts: [['gestacion', 'Gestación'], ['lactancia', 'Lactancia'], ['reemplazo', 'Reemplazo'], ['preinicio', 'Preinicio']] },
+      { k: 'bultos', t: 'dec', label: 'Bultos (40 kg)' },
+      { k: 'alimento', t: 'texto', label: 'Alimento', opc: true, lista: 'alimentos_cria' },
+      { k: 'banda', t: 'banda', label: 'Banda', opc: true },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: v => ({ ruta: '/api/informes/consumos',
+      body: { fecha: v.fecha, fase: v.fase, banda_id: num(v.banda), tipo_alimento: v.alimento || null, bultos: num(v.bultos), observaciones: v.obs || null },
+      resumen: () => `Alimento cría · ${({gestacion:'gestación',lactancia:'lactancia',reemplazo:'reemplazo',preinicio:'preinicio'})[v.fase]} · ${num(v.bultos)} bultos` })
+  },
+  alim_ceba: {
+    titulo: 'Alimentación ceba', icono: '🥣', ayuda: 'Bultos de alimento dados a un lote de ceba.',
+    campos: [
+      { k: 'fecha', t: 'fecha', label: 'Fecha' },
+      { k: 'lote', t: 'lote', label: 'Lote' },
+      { k: 'bultos', t: 'dec', label: 'Bultos (40 kg)' },
+      { k: 'alimento', t: 'texto', label: 'Alimento', opc: true, lista: 'alimentos_ceba' },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: v => { const l = loteDe(v.lote); return { ruta: '/api/ceba/consumo',
+      body: { granja_id: l?.granja_ceba_id, lote_id: num(v.lote), fecha: v.fecha, bultos: num(v.bultos), tipo_alimento: v.alimento || null, observaciones: v.obs || null },
+      resumen: () => `Alimento ceba · ${l?.nombre || ''} · ${num(v.bultos)} bultos` }; }
+  },
+  muerte_ceba: {
+    titulo: 'Muertes en ceba', icono: '⚠️', ayuda: 'Animales muertos en un lote de ceba. Descuenta del inventario del lote.',
+    campos: [
+      { k: 'fecha', t: 'fecha', label: 'Fecha' },
+      { k: 'lote', t: 'lote', label: 'Lote' },
+      { k: 'cantidad', t: 'int', label: 'Cantidad de animales' },
+      { k: 'causa', t: 'texto', label: 'Causa', opc: true },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: v => { const l = loteDe(v.lote); return { ruta: '/api/ceba/movimientos',
+      body: { granja_id: l?.granja_ceba_id, lote_id: num(v.lote), fecha: v.fecha, tipo: 'muerte', cantidad: num(v.cantidad), causa: v.causa || null, observaciones: v.obs || null },
+      resumen: () => `Muerte ceba · ${l?.nombre || ''} · ${num(v.cantidad)}` }; }
+  },
+  salida: {
+    titulo: 'Salida de hembra', icono: '📤', ayuda: 'Muerte o descarte de una hembra. Sale del plantel activo.',
+    campos: [
+      { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: null },
+      { k: 'fecha', t: 'fecha', label: 'Fecha' },
+      { k: 'tipo', t: 'seg', label: 'Motivo', def: 'descarte', opts: [['descarte', 'Descarte', 'ambar'], ['muerte', 'Muerte', 'rojo']] },
+      { k: 'causa', t: 'texto', label: 'Causa', opc: true },
+      { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+    ],
+    armar: v => ({ ruta: '/api/cria/salidas',
+      body: { cerda_id: v.cerda_id, fecha: v.fecha, tipo: v.tipo, causa: v.causa || null, observaciones: v.obs || null },
+      resumen: c => `Salida (${v.tipo}) · ${c.arete}` })
+  }
+};
+FORMS.mortalidad = {
+  titulo: 'Mortalidad en lactancia', icono: '🐽', ayuda: 'Lechones que mueren mientras la hembra amamanta, antes del destete. Descuenta de la camada.',
+  campos: [
+    { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: ['lactante'] },
+    { k: 'fecha', t: 'fecha', label: 'Fecha' },
+    { k: 'cantidad', t: 'int', label: 'Lechones muertos' },
+    { k: 'causa', t: 'seg', label: 'Causa', def: 'Aplastados', opts: [['Aplastados', 'Aplastados'], ['Diarrea', 'Diarrea'], ['Bajo peso', 'Bajo peso'], ['Otra', 'Otra']] },
+    { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+  ],
+  armar: v => ({ ruta: '/api/campo/mortalidad-lactancia',
+    body: { cerda_id: v.cerda_id, fecha: v.fecha, cantidad: num(v.cantidad), causa: v.causa || null, observaciones: v.obs || null },
+    resumen: c => `Mortalidad lactancia · ${c.arete} · ${num(v.cantidad)}` })
+};
+FORMS.reemplazo = {
+  titulo: 'Entrada de reemplazos', icono: '🆕', ayuda: 'Hembra nueva que entra al plantel como reemplazo. Podrás servirla cuando esté lista.',
+  campos: [
+    { k: 'arete', t: 'texto', label: 'Arete (número)' },
+    { k: 'raza', t: 'raza', label: 'Raza' },
+    { k: 'fecha', t: 'fecha', label: 'Fecha de ingreso' },
+    { k: 'origen', t: 'seg', label: 'Origen', def: 'compra', opts: [['compra', 'Comprada'], ['reposicion_interna', 'Nacida en la granja']] },
+    { k: 'proveedor', t: 'texto', label: 'Proveedor', opc: true, si: v => v.origen === 'compra' },
+    { k: 'nacimiento', t: 'fechaopc', label: 'Fecha de nacimiento' },
+    { k: 'peso', t: 'dec', label: 'Peso de ingreso (kg)', opc: true },
+    { k: 'ubicacion', t: 'texto', label: 'Corral / ubicación', opc: true },
+    { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+  ],
+  armar: v => ({ ruta: '/api/campo/reemplazos', temp_id: -Math.floor(1 + Math.random() * 1e9),
+    body: { arete: String(v.arete || '').trim(), raza_id: num(v.raza), fecha_ingreso: v.fecha, origen: v.origen,
+      proveedor: v.origen === 'compra' ? (v.proveedor || null) : null, fecha_nacimiento: v.nacimiento || null,
+      peso_ingreso: num(v.peso), ubicacion: v.ubicacion || null, observaciones: v.obs || null },
+    resumen: () => `Reemplazo nuevo · ${String(v.arete || '').trim()}` })
+};
+FORMS.pesaje = {
+  titulo: 'Pesajes', icono: '⚖️', ayuda: 'Pesa una hembra, o una muestra de animales de un lote de ceba.',
+  campos: [
+    { k: 'tipo', t: 'seg', label: 'Qué vas a pesar', def: 'lote', opts: [['lote', 'Lote de ceba'], ['hembra', 'Una hembra']] },
+    { k: 'fecha', t: 'fecha', label: 'Fecha del pesaje' },
+    { k: 'lote', t: 'lote', label: 'Lote', si: v => v.tipo === 'lote' },
+    { k: 'cantidad', t: 'int', label: 'Animales pesados', si: v => v.tipo === 'lote' },
+    { k: 'peso_total', t: 'dec', label: 'Peso total de esos animales (kg)', si: v => v.tipo === 'lote' },
+    { k: 'cerda_id', t: 'cerda', label: 'Hembra', filtro: null, si: v => v.tipo === 'hembra' },
+    { k: 'peso', t: 'dec', label: 'Peso de la hembra (kg)', si: v => v.tipo === 'hembra' },
+    { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+  ],
+  armar: v => v.tipo === 'hembra'
+    ? { ruta: '/api/campo/pesajes', body: { tipo: 'hembra', cerda_id: v.cerda_id, fecha: v.fecha, cantidad: 1, peso_total: num(v.peso), observaciones: v.obs || null },
+        resumen: c => `Pesaje · ${c.arete} · ${num(v.peso)} kg` }
+    : { ruta: '/api/campo/pesajes', body: { tipo: 'lote', lote_id: num(v.lote), fecha: v.fecha, cantidad: num(v.cantidad), peso_total: num(v.peso_total), observaciones: v.obs || null },
+        resumen: () => `Pesaje · ${loteDe(v.lote)?.nombre || 'lote'} · ${num(v.cantidad)} animales · prom. ${(num(v.peso_total) / num(v.cantidad)).toFixed(1)} kg` }
+};
+const visibles = (f, v) => f.campos.filter(c => !c.si || c.si(v));
+const loteDe = id => (S.datos?.lotes || []).find(l => l.id === num(id));
+
+// ---------- Cola de envío ----------
+function encolar(op) {
+  op.id = uuid(); op.estado = 'pendiente'; op.creado = Date.now();
+  S.cola.push(op); guardarCola();
+  sincronizar();
+}
+async function sincronizar() {
+  if (S.sync || !S.token) return;
+  const hay = () => S.cola.some(o => o.estado === 'pendiente');
+  if (!hay() && Date.now() - (S.datos?.guardado || 0) < 5 * 60e3) return;
+  S.sync = true; pintarEstado();
+  try {
+    for (const op of S.cola.filter(o => o.estado === 'pendiente')) {
+      // El destete necesita el id real del parto; si el parto se registró sin señal, se busca ahora.
+      if (op.resolverParto && !op.body.parto_id) {
+        const d = await traerDatos();
+        const c = d.cerdas.find(x => x.id === op.body.cerda_id);
+        if (!c || !c.ultimo_parto_id) { op.estado = 'error'; op.error = 'No se encontró el parto de esta hembra en el servidor.'; guardarCola(); continue; }
+        op.body.parto_id = c.ultimo_parto_id;
+      }
+      // Hembra registrada sin señal en este mismo celular: se busca su id real en el servidor
+      if (op.arete_ref && op.body.cerda_id < 0) {
+        const d = await traerDatos();
+        const c = d.cerdas.find(x => x.arete === op.arete_ref);
+        if (!c) { op.estado = 'error'; op.error = 'La hembra ' + op.arete_ref + ' aún no existe en el servidor.'; guardarCola(); continue; }
+        op.body.cerda_id = c.id;
+      }
+      const r = await llamar('POST', op.ruta, op.body, op.id);
+      if (r.status === 401) { S.necesitaLogin = true; break; }
+      if (r.ok) { op.estado = 'enviado'; op.enviado_en = Date.now(); delete op.error; }
+      else if (r.status >= 500 || r.status === 409 || r.status === 429) { op.error = (r.data && r.data.error) || 'El servidor no respondió, se reintentará.'; guardarCola(); break; }
+      else { op.estado = 'error'; op.error = (r.data && r.data.error) || ('Error ' + r.status); }
+      guardarCola();
+    }
+    // Quitar enviados con más de 3 días
+    S.cola = S.cola.filter(o => !(o.estado === 'enviado' && Date.now() - o.enviado_en > 3 * 864e5));
+    guardarCola();
+    if (!S.necesitaLogin) await traerDatos();
+  } catch (e) { /* sin señal: queda pendiente */ }
+  S.sync = false; render();
+}
+setInterval(() => { if (S.token && navigator.onLine) sincronizar(); }, 60000);
+addEventListener('online', () => { pintarEstado(); sincronizar(); });
+addEventListener('offline', pintarEstado);
+
+// ---------- Navegación ----------
+function ir(vista, extra) {
+  S.vista = vista; Object.assign(S, extra || {});
+  history.pushState({ vista }, '');
+  render(); scrollTo(0, 0);
+}
+function abrirForm(tipo, preset) {
+  const f = FORMS[tipo];
+  const vals = { fecha: hoy() };
+  for (const c of f.campos) if (c.def !== undefined) vals[c.k] = c.def;
+  if (tipo === 'parto') { vals.vivos = ''; vals.muertos = '0'; vals.momif = '0'; }
+  Object.assign(vals, preset || {});
+  S.form = { tipo, vals, err: '' };
+  if (vals.cerda_id) aplicarDefectos();
+  ir('form');
+}
+function aplicarDefectos() {
+  const { tipo, vals } = S.form, c = cerdaPorId(vals.cerda_id);
+  if (tipo === 'destete' && c && !vals.lechones) vals.lechones = String(vivosActuales(c) ?? '');
+}
+addEventListener('popstate', () => { S.vista = 'home'; S.sheet = null; render(); });
+
+function toast(msg, ms = 2600) {
+  S.toast = msg; renderToast();
+  clearTimeout(toast.t); toast.t = setTimeout(() => { S.toast = null; renderToast(); }, ms);
+}
+function renderToast() {
+  let t = $('#toast');
+  if (!S.toast) { if (t) t.remove(); return; }
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = S.toast;
+}
+
+// ---------- Vistas ----------
+function barra(titulo, sub, atras) {
+  const pend = S.cola.filter(o => o.estado !== 'enviado').length;
+  return `<div class="top">
+    ${atras ? `<button class="atras" data-act="atras" aria-label="Volver">←</button>` : ''}
+    <div class="tit"><b>${esc(titulo)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div>
+    <span id="estado">${chipEstado(pend)}</span>
+  </div>`;
+}
+function chipEstado(pend) {
+  pend = pend ?? S.cola.filter(o => o.estado !== 'enviado').length;
+  if (S.sync) return `<span class="chip pend">Enviando…</span>`;
+  if (pend) return `<button class="chip pend" data-act="envios">${pend} por enviar</button>`;
+  return navigator.onLine ? `<span class="chip on">● En línea</span>` : `<span class="chip off">Sin señal</span>`;
+}
+function pintarEstado() { const e = $('#estado'); if (e) e.innerHTML = chipEstado(); }
+
+function vLogin() {
+  const ultimoEmail = LS.get('ag_email', '');
+  return `<main class="login">
+    <img class="logo" src="icon-192.png" alt="">
+    <h1 class="centro">AgroSoft Campo</h1>
+    <p class="hint centro">${S.necesitaLogin && S.usuario ? 'Tu sesión venció. Inicia sesión otra vez: los registros guardados en este celular se enviarán después.' : 'Ingresa con el usuario que te dio el administrador.'}</p>
+    <form id="fLogin" autocomplete="on">
+      <label class="f">Correo</label>
+      <input type="email" id="lEmail" autocomplete="username" value="${esc(ultimoEmail)}" required>
+      <label class="f">Contraseña</label>
+      <input type="password" id="lPass" autocomplete="current-password" required>
+      <div class="err" id="lErr">${esc(S.loginErr)}</div>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+    ${S.instalar ? `<button class="btn sec" data-act="instalar">Instalar app en el celular</button>` : ''}
+    <p class="hint centro" style="margin-top:22px">La primera vez necesitas señal para entrar. Después la app funciona sin señal.</p>
+  </main>`;
+}
+
+function vHome() {
+  const al = calcularAlertas(), pend = S.cola.filter(o => o.estado !== 'enviado').length;
+  const nTar = tareasPendientes().length;
+  const antig = S.datos?.guardado ? Math.floor((Date.now() - S.datos.guardado) / 36e5) : null;
+  const tile = (act, ic, nom, sub, b) => `<button class="tile" data-act="${act}"><span class="ic">${ic}</span><span><b>${nom}</b><br><small>${sub}</small></span>${b ? `<span class="badge ${b.v ? 'v' : ''}">${b.n}</span>` : ''}</button>`;
+  return `${barra('AgroSoft Campo', S.usuario ? 'Hola, ' + S.usuario.nombre : '')}
+  <main>
+    ${!S.datos ? `<div class="aviso rojo">Aún no hay datos de la granja en este celular. Conéctate a internet y toca “Actualizar datos”.</div>` : ''}
+    ${antig != null && antig >= 48 ? `<div class="aviso">Los datos tienen ${Math.floor(antig / 24)} días. Conéctate para actualizarlos.</div>` : ''}
+    ${S.necesitaLogin ? `<div class="aviso rojo">Tu sesión venció. <b><a href="#" data-act="relogin">Inicia sesión</a></b> para enviar los registros pendientes.</div>` : ''}
+    <div class="grid">
+      <button class="tile ancho" data-act="alertas"><span class="ic">📋</span><span><b>Pendientes de hoy</b><br><small>${al.length ? al.length + ' hembras por atender' : 'Nada urgente por ahora'}</small></span>${al.length ? `<span class="badge">${al.length}</span>` : ''}</button>
+    </div>
+    <h2>Reproducción</h2>
+    <div class="grid">
+      ${tile('form:servicio', '💉', 'Servicio', 'IA o monta')}
+      ${tile('recelos', '👀', 'Recelos', 'AM / PM')}
+      ${tile('form:diagnostico', '🩺', 'Diagnóstico', 'Preñez')}
+      ${tile('form:parto', '🐖', 'Parto', 'Nacidos y peso')}
+      ${tile('form:destete', '🍼', 'Destete', 'Lechones')}
+      ${tile('form:salida', '📤', 'Salida hembra', 'Muerte / descarte')}
+    </div>
+    <h2>Lactancia, reemplazos y pesajes</h2>
+    <div class="grid">
+      ${tile('form:mortalidad', '🐽', 'Mortalidad lactancia', 'Lechones muertos')}
+      ${tile('form:reemplazo', '🆕', 'Entrada reemplazos', 'Hembras nuevas')}
+      <button class="tile ancho" data-act="form:pesaje"><span class="ic">⚖️</span><span><b>Pesajes</b><br><small>Hembras y lotes de ceba</small></span></button>
+    </div>
+    <h2>Alimentación y ceba</h2>
+    <div class="grid">
+      ${tile('form:alim_cria', '🌾', 'Alimento cría', 'Bultos por fase')}
+      ${tile('form:alim_ceba', '🥣', 'Alimento ceba', 'Bultos por lote')}
+      ${tile('form:muerte_ceba', '⚠️', 'Muertes ceba', 'Por lote')}
+      ${tile('tareas', '💊', 'Tareas', 'Vacunas y manejo', nTar ? { n: nTar, v: 1 } : null)}
+    </div>
+    <div class="pie">
+      <button class="btn sec" data-act="envios" style="margin:0">Envíos${pend ? ` (${pend} por enviar)` : ''}</button>
+      <button class="btn sec" data-act="refrescar" style="margin:0">Actualizar datos${S.datos?.guardado ? ` · ${new Date(S.datos.guardado).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}` : ''}</button>
+      ${S.instalar ? `<button class="btn sec" data-act="instalar" style="margin:0">Instalar app en el celular</button>` : ''}
+      <button class="btn sec" data-act="salir" style="margin:0">Cerrar sesión</button>
+    </div>
+  </main>`;
+}
+
+function campoHtml(c, v) {
+  const val = v[c.k] ?? '';
+  const op = c.opc ? ' <small>(opcional)</small>' : '';
+  const lab = `<label class="f">${esc(c.label)}${op}</label>`;
+  switch (c.t) {
+    case 'cerda': {
+      const x = v.cerda_id ? cerdaPorId(v.cerda_id) : null;
+      return `${lab}<button type="button" class="pick ${x ? '' : 'vacio'}" data-act="elegir-cerda">
+        <span>${x ? `<b>${esc(x.arete)}</b> · ${esc(x.raza || '')}` : 'Toca para elegir la hembra'}</span><span>›</span></button>
+        ${x ? `<p class="hint">${esc(ESTADO_TXT[x.estado] || x.estado)} · ciclo ${x.ciclo_actual} · ${esc(infoCerda(x))}${S.form?.tipo === 'pesaje' && x.ultimo_peso ? ` · último peso ${x.ultimo_peso.peso} kg (${fmt(x.ultimo_peso.fecha)})` : ''}</p>` : ''}`;
+    }
+    case 'fecha': return `${lab}<input type="date" data-k="${c.k}" value="${esc(val)}" max="${hoy()}">`;
+    case 'fechaopc': return `${lab.replace('</label>', ' <small>(opcional)</small></label>')}<input type="date" data-k="${c.k}" value="${esc(val)}" max="${hoy()}">`;
+    case 'raza': return `${lab}<select data-k="raza"><option value="">Elige la raza</option>${(S.datos?.razas || []).map(r => `<option value="${r.id}" ${String(v.raza) === String(r.id) ? 'selected' : ''}>${esc(r.nombre)}</option>`).join('')}</select>`;
+    case 'texto': return `${lab}<input type="text" data-k="${c.k}" value="${esc(val)}" autocomplete="off" ${c.lista ? `list="dl_${c.k}"` : ''}>
+      ${c.lista ? `<datalist id="dl_${c.k}">${(S.datos?.[c.lista] || []).map(a => `<option value="${esc(a)}">`).join('')}</datalist>` : ''}`;
+    case 'area': return `${lab}<textarea data-k="${c.k}">${esc(val)}</textarea>`;
+    case 'int': return `${lab}<input type="number" inputmode="numeric" min="0" step="1" data-k="${c.k}" value="${esc(val)}">`;
+    case 'dec': return `${lab}<input type="number" inputmode="decimal" min="0" step="0.01" data-k="${c.k}" value="${esc(val)}">`;
+    case 'seg': return `${lab}<div class="seg">${c.opts.map(([k, t, col]) =>
+      `<button type="button" data-seg="${c.k}" data-val="${k}" class="${v[c.k] === k ? 'sel ' + (col === 'rojo' ? 'rojo' : col === 'ambar' ? 'ambar' : '') : ''}">${esc(t)}</button>`).join('')}</div>`;
+    case 'grupo3': return `${lab}<div class="fila3">${c.items.map(([k, t]) =>
+      `<div><small class="hint" style="display:block;margin:0 0 4px">${t}</small><input type="number" inputmode="numeric" min="0" step="1" data-k="${k}" value="${esc(v[k] ?? '')}"></div>`).join('')}</div>`;
+    case 'banda': return `${lab}<select data-k="banda"><option value="">Sin banda</option>${(S.datos?.bandas || []).map(b => `<option value="${b.id}" ${String(v.banda) === String(b.id) ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}</select>`;
+    case 'lote': {
+      const lotes = S.datos?.lotes || [];
+      if (!lotes.length) return `${lab}<div class="aviso">No hay lotes de ceba activos en los datos del celular.</div>`;
+      const gr = {}; lotes.forEach(l => (gr[l.granja] = gr[l.granja] || []).push(l));
+      return `${lab}<select data-k="lote"><option value="">Elige el lote</option>${Object.entries(gr).map(([g, ls]) =>
+        `<optgroup label="${esc(g)}">${ls.map(l => `<option value="${l.id}" ${String(v.lote) === String(l.id) ? 'selected' : ''}>${esc(l.nombre)} · ${l.inventario} animales</option>`).join('')}</optgroup>`).join('')}</select>
+        ${S.form?.tipo === 'pesaje' && v.lote && loteDe(v.lote)?.ultimo_pesaje ? `<p class="hint">Último pesaje: ${loteDe(v.lote).ultimo_pesaje.peso} kg de promedio (${loteDe(v.lote).ultimo_pesaje.cantidad} animales) el ${fmt(loteDe(v.lote).ultimo_pesaje.fecha)}</p>` : ''}
+        ${S.form?.tipo === 'pesaje' ? `<p class="hint" id="promLote"></p>` : ''}`;
+    }
+  }
+  return '';
+}
+
+function vForm() {
+  const { tipo, vals, err } = S.form, f = FORMS[tipo];
+  return `${barra(f.titulo, '', true)}
+  <main>
+    <p class="hint">${esc(f.ayuda)}</p>
+    <form id="fReg" novalidate>
+      ${visibles(f, vals).map(c => campoHtml(c, vals)).join('')}
+      <div class="err" id="fErr">${esc(err)}</div>
+      <button class="btn" type="submit">Guardar</button>
+    </form>
+  </main>`;
+}
+
+function validar(tipo, v) {
+  const f = FORMS[tipo];
+  if (!v.fecha) return 'Falta la fecha.';
+  if (v.fecha > hoy()) return 'La fecha no puede ser futura.';
+  if (diasDesde(v.fecha) > 60) return 'La fecha es de hace más de 60 días. Revísala.';
+  for (const c of visibles(f, v)) {
+    if (c.t === 'cerda' && !v.cerda_id) return 'Elige la hembra.';
+    if (c.t === 'lote' && !v.lote) return 'Elige el lote.';
+  }
+  if (tipo === 'mortalidad') {
+    const c = cerdaPorId(v.cerda_id), n = num(v.cantidad), vivos = c ? vivosActuales(c) : null;
+    if (n == null || n < 1 || !Number.isInteger(n)) return 'Escribe cuántos lechones murieron.';
+    if (vivos != null && n > vivos) return `La camada solo tiene ${vivos} lechones vivos.`;
+    if (c?.fecha_ultimo_parto && v.fecha < c.fecha_ultimo_parto) return 'La fecha no puede ser anterior al parto.';
+  }
+  if (tipo === 'reemplazo') {
+    const a = String(v.arete || '').trim();
+    if (!a) return 'Escribe el arete de la hembra.';
+    if (!v.raza) return 'Elige la raza.';
+    if (cerdasVista().some(c => c.arete.toLowerCase() === a.toLowerCase())) return 'Ya existe una hembra con ese arete.';
+    const p = num(v.peso); if (p != null && (p <= 0 || p >= 400)) return 'El peso de ingreso parece incorrecto.';
+    if (v.nacimiento && v.nacimiento > v.fecha) return 'La fecha de nacimiento no puede ser después del ingreso.';
+  }
+  if (tipo === 'pesaje') {
+    if (v.tipo === 'hembra') { const p = num(v.peso); if (p == null || p < 5 || p > 400) return 'Escribe el peso de la hembra (5 a 400 kg).'; }
+    else {
+      const n = num(v.cantidad), t = num(v.peso_total);
+      if (n == null || n < 1 || !Number.isInteger(n)) return 'Escribe cuántos animales pesaste.';
+      if (t == null || t <= 0) return 'Escribe el peso total.';
+      if (t / n < 3 || t / n > 200) return `El promedio (${(t / n).toFixed(1)} kg por animal) parece incorrecto. Revisa el peso total y la cantidad.`;
+    }
+  }
+  if (tipo === 'parto') {
+    const vivos = num(v.vivos); if (vivos == null || vivos < 0 || vivos > 30) return 'Escribe los lechones vivos (0 a 30).';
+    for (const k of ['muertos', 'momif']) { const n = num(v[k]) ?? 0; if (n < 0 || n > 30) return 'Revisa muertos y momificados.'; }
+    const p = num(v.peso); if (p != null && (p <= 0 || p > 60)) return 'El peso de la camada parece incorrecto.';
+  }
+  if (tipo === 'destete') {
+    const n = num(v.lechones); if (n == null || n < 0 || n > 25) return 'Escribe los lechones destetados (0 a 25).';
+    const p = num(v.peso); if (p != null && (p <= 0 || p > 400)) return 'El peso de la camada parece incorrecto.';
+  }
+  if (tipo === 'alim_cria' || tipo === 'alim_ceba') {
+    const b = num(v.bultos); if (b == null || b <= 0 || b > 2000) return 'Escribe los bultos (mayor que 0).';
+  }
+  if (tipo === 'muerte_ceba') {
+    const n = num(v.cantidad), l = loteDe(v.lote);
+    if (n == null || n < 1) return 'Escribe cuántos animales murieron.';
+    if (l && n > l.inventario) return `El lote solo tiene ${l.inventario} animales.`;
+  }
+  // No registrar dos veces el mismo parto o destete pendiente
+  if ((tipo === 'parto' || tipo === 'destete') && S.cola.some(o => o.tipo === tipo && o.estado === 'pendiente' && o.body.cerda_id === v.cerda_id))
+    return 'Ya hay un registro igual de esta hembra esperando envío.';
+  return '';
+}
+
+function guardarForm() {
+  const { tipo, vals } = S.form, f = FORMS[tipo];
+  const e = validar(tipo, vals);
+  if (e) { S.form.err = e; $('#fErr').textContent = e; return; }
+  const c = vals.cerda_id ? cerdaPorId(vals.cerda_id) : null;
+  const a = f.armar(vals, S.usuario, c);
+  encolar({ tipo, ruta: a.ruta, body: a.body, resolverParto: !!a.resolverParto, resumen: a.resumen(c),
+    temp_id: a.temp_id, arete_ref: (c && c.id < 0) ? c.arete : undefined });
+  toast('✓ Guardado: ' + a.resumen(c));
+  // Se queda en el mismo formulario para registrar otro; limpia lo que cambia de un registro a otro
+  for (const k of ['cerda_id', 'vivos', 'lechones', 'peso', 'peso_total', 'bultos', 'cantidad', 'verraco', 'dosis', 'obs', 'arete']) delete vals[k];
+  if (tipo === 'mortalidad') vals.causa = 'Aplastados';
+  if (tipo === 'parto') { vals.vivos = ''; vals.muertos = '0'; vals.momif = '0'; }
+  S.form.err = '';
+  render();
+}
+
+// ----- Selector de hembra -----
+function hojaCerdas() {
+  const f = FORMS[S.form.tipo].campos.find(c => c.t === 'cerda');
+  const { q = '', todas = false } = S.sheet;
+  let lista = cerdasVista();
+  if (f.filtro && !todas) lista = lista.filter(c => f.filtro.includes(c.estado));
+  const total = lista.length;
+  if (q) lista = lista.filter(c => c.arete.toLowerCase().includes(q.toLowerCase()));
+  return `<div class="hoja">
+    <header><input type="text" id="qCerda" placeholder="Buscar arete…" value="${esc(q)}" autocomplete="off"><button data-act="cerrar-hoja">Cerrar</button></header>
+    ${f.filtro ? `<div class="filtro"><span>${todas ? 'Todas las hembras' : 'Solo: ' + f.filtro.map(x => ESTADO_TXT[x]).join(', ')}</span><button class="mini" data-act="todas">${todas ? 'Ver solo estas' : 'Ver todas'}</button></div>` : ''}
+    <div class="lista" id="lstCerda">${listaCerdasHtml(lista, total)}</div></div>`;
+}
+function listaCerdasHtml(lista, total) {
+  if (!lista.length) return `<p class="hint centro" style="margin-top:30px">No hay hembras${total ? ' con ese arete' : ' en este estado'}. ${S.datos ? '' : 'Actualiza los datos con señal.'}</p>`;
+  return lista.slice(0, 200).map(c => `<button class="it" data-act="pick" data-id="${c.id}">
+      <span><b>${esc(c.arete)}</b> <small style="display:inline">${esc(c.raza || '')}</small><small>${esc(infoCerda(c))}</small></span>
+      <span class="est ${c.estado}">${esc(ESTADO_TXT[c.estado] || c.estado)}</span></button>`).join('');
+}
+
+// ----- Recelos -----
+function vRecelos() {
+  const R = S.recel, todas = cerdasVista();
+  let lista = todas.filter(c => R.filtro === 'todas' ? ['servida', 'vacia'].includes(c.estado) : c.estado === R.filtro);
+  lista.sort((a, b) => (R.filtro === 'vacia'
+    ? (diasDesde(a.fecha_ultimo_destete) ?? 999) - (diasDesde(b.fecha_ultimo_destete) ?? 999)
+    : (diasDesde(b.fecha_ultimo_servicio) ?? 0) - (diasDesde(a.fecha_ultimo_servicio) ?? 0)));
+  const marca = c => (c.recelos || []).find(x => x.fecha === R.fecha && x.jornada === R.jornada);
+  const hechas = lista.filter(marca).length;
+  const filas = lista.map(c => {
+    const m = marca(c), otra = (c.recelos || []).find(x => x.fecha === R.fecha && x.jornada !== R.jornada);
+    const d = c.estado === 'servida' ? diasDesde(c.fecha_ultimo_servicio) : null;
+    const vent = d != null && d >= 17 && d <= 25;
+    const info = c.estado === 'servida'
+      ? `<span class="dia ${vent ? 'vent' : ''}">Día ${d} del servicio${vent ? ' · ventana de retorno' : ''}</span>`
+      : `<span class="dia">Vacía${c.fecha_ultimo_destete ? ' · destete hace ' + diasDesde(c.fecha_ultimo_destete) + ' d' : ''}</span>`;
+    let nota = '';
+    if (m?.resultado === 'en_celo' && c.estado === 'servida') nota = `<div class="nota">Posible retorno a celo. Avisa al encargado.</div>`;
+    if (m?.resultado === 'en_celo' && c.estado === 'vacia') nota = `<div class="nota">En celo. <a href="#" data-act="servir" data-id="${c.id}">Registrar servicio</a></div>`;
+    return `<div class="rec"><div class="cab"><b>${esc(c.arete)}</b>${info}</div>
+      <div class="bt"><button class="celo ${m?.resultado === 'en_celo' ? 'sel' : ''}" data-act="rec" data-id="${c.id}" data-r="en_celo">En celo</button>
+      <button class="sin ${m?.resultado === 'sin_celo' ? 'sel' : ''}" data-act="rec" data-id="${c.id}" data-r="sin_celo">Sin celo</button></div>
+      ${otra ? `<div class="dia" style="margin-top:6px">${otra.jornada}: ${otra.resultado === 'en_celo' ? 'en celo' : 'sin celo'}</div>` : ''}${nota}</div>`;
+  }).join('');
+  return `${barra('Recelos', 'Confirmación de preñez', true)}
+  <main>
+    <div class="seg">${['AM', 'PM'].map(j => `<button data-act="jornada" data-j="${j}" class="${R.jornada === j ? 'sel' : ''}">${j === 'AM' ? 'Mañana (AM)' : 'Tarde (PM)'}</button>`).join('')}</div>
+    <label class="f">Fecha</label><input type="date" id="recFecha" value="${esc(R.fecha)}" max="${hoy()}">
+    <div class="seg" style="margin-top:12px">${[['servida', 'Servidas'], ['vacia', 'Vacías'], ['todas', 'Ambas']].map(([k, t]) => `<button data-act="rfiltro" data-f="${k}" class="${R.filtro === k ? 'sel' : ''}">${t}</button>`).join('')}</div>
+    <p class="hint" style="margin-top:12px"><b>${hechas}</b> de <b>${lista.length}</b> marcadas en ${R.jornada === 'AM' ? 'la mañana' : 'la tarde'}.
+      Si una servida no muestra celo en AM ni PM alrededor del día 21, la preñez se confirma.</p>
+    <div class="prog"><i style="width:${lista.length ? Math.round(hechas * 100 / lista.length) : 0}%"></i></div>
+    ${filas || `<p class="hint centro" style="margin-top:30px">No hay hembras en este grupo.</p>`}
+  </main>`;
+}
+function marcarRecelo(id, resultado) {
+  const R = S.recel, c = cerdaPorId(id);
+  // Un solo registro pendiente por hembra/fecha/jornada: el último gana
+  S.cola = S.cola.filter(o => !(o.tipo === 'recelo' && o.estado === 'pendiente' && o.body.cerda_id === id && o.body.fecha === R.fecha && o.body.jornada === R.jornada));
+  const ya = (c.recelos || []).find(x => x.fecha === R.fecha && x.jornada === R.jornada);
+  if (ya && ya.resultado === resultado && !S.cola.some(o => o.tipo === 'recelo' && o.body.cerda_id === id && o.body.fecha === R.fecha && o.body.jornada === R.jornada)) {
+    // ya está registrado igual en el servidor; no se vuelve a enviar
+    render(); return;
+  }
+  encolar({ tipo: 'recelo', ruta: '/api/campo/recelos', body: { cerda_id: id, fecha: R.fecha, jornada: R.jornada, resultado },
+    resumen: `Recelo ${R.jornada} · ${c.arete} · ${resultado === 'en_celo' ? 'en celo' : 'sin celo'}` });
+  render();
+}
+
+// ----- Pendientes del día -----
+function vAlertas() {
+  const al = calcularAlertas();
+  const grupos = [['parto', 'Próximas a parir'], ['recelo', 'Revisar recelo'], ['eco', 'Confirmar preñez'], ['destete', 'Para destetar'], ['celo', 'Vigilar celo']];
+  const html = grupos.map(([k, tit]) => {
+    const xs = al.filter(a => a.k === k); if (!xs.length) return '';
+    return `<h2>${tit} (${xs.length})</h2>` + xs.map(a => `<button class="it" data-act="alerta" data-id="${a.c.id}" data-a="${a.accion}">
+      <span><b>${esc(a.c.arete)}</b><small>${esc(a.txt)}</small></span><span>›</span></button>`).join('');
+  }).join('');
+  return `${barra('Pendientes de hoy', 'Calculado con las fechas', true)}<main>
+    ${html || `<div class="aviso ok">No hay hembras por atender con las fechas actuales.</div>`}
+    <p class="hint" style="margin-top:18px">Recelo desde el día 17 del servicio, preñez desde el día 28, parto desde el día 108, destete desde los 21 días de lactancia.</p></main>`;
+}
+
+// ----- Tareas sanitarias -----
+function vTareas() {
+  const xs = tareasPendientes(), h = hoy();
+  const porFecha = {}; xs.forEach(e => (porFecha[e.fecha] = porFecha[e.fecha] || []).push(e));
+  const html = Object.keys(porFecha).sort().map(f => {
+    const rot = f < h ? 'Vencidas · ' + fmt(f) : f === h ? 'Hoy' : fmt(f);
+    return `<h2>${rot}</h2>` + porFecha[f].map(e => `<div class="li"><span><b>${esc(e.tarea)}</b><small>${esc(e.animal)} · ${esc(e.tipo_tarea || '')}${e.cantidad ? ' · ' + esc(e.cantidad) : ''}</small></span>
+      <button class="mini ok" data-act="tarea" data-t="${e.tarea_id}" data-c="${e.cerda_id}" data-f="${e.fecha}">Hecha</button></div>`).join('');
+  }).join('');
+  return `${barra('Tareas', 'Vacunas y manejo sanitario', true)}<main>
+    ${!S.tareas ? `<div class="aviso">Aún no se han descargado las tareas. Conéctate y toca “Actualizar datos”.</div>` : ''}
+    ${html || (S.tareas ? `<div class="aviso ok">No hay tareas pendientes en este período.</div>` : '')}
+    <p class="hint">Muestra las vencidas de los últimos 14 días y las de la próxima semana.</p></main>`;
+}
+
+// ----- Envíos -----
+function vEnvios() {
+  const xs = S.cola.slice().sort((a, b) => b.creado - a.creado);
+  const hora = t => new Date(t).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const pend = xs.filter(o => o.estado === 'pendiente').length;
+  return `${barra('Envíos', 'Registros de este celular', true)}<main>
+    ${pend ? `<div class="aviso">${pend} registro(s) esperan señal para enviarse. No se pierden aunque cierres la app.</div>` : `<div class="aviso ok">Todo está enviado.</div>`}
+    <button class="btn" data-act="sync" style="margin:0 0 8px" ${S.sync ? 'disabled' : ''}>${S.sync ? 'Enviando…' : 'Enviar ahora'}</button>
+    ${xs.map(o => `<div class="li ${o.estado}"><span><b>${esc(o.resumen)}</b>
+      <small>${hora(o.creado)} · ${o.estado === 'enviado' ? 'Enviado ✓' : o.estado === 'error' ? 'No se pudo registrar' : 'Por enviar'}</small>
+      ${o.estado === 'error' ? `<small style="color:var(--rojo);font-weight:600">${esc(o.error)}</small>` : ''}</span>
+      ${o.estado === 'error' ? `<button class="mini" data-act="descartar" data-id="${o.id}">Descartar</button>` : ''}</div>`).join('') || `<p class="hint centro">Aún no hay registros.</p>`}
+  </main>`;
+}
+
+// ---------- Render y eventos ----------
+function render() {
+  const raiz = $('#raiz');
+  if (!S.token || (S.necesitaLogin && S.vista === 'login')) { raiz.innerHTML = vLogin(); return enlazarLogin(); }
+  const v = { home: vHome, form: vForm, recelos: vRecelos, alertas: vAlertas, tareas: vTareas, envios: vEnvios }[S.vista] || vHome;
+  const y = scrollY;
+  raiz.innerHTML = v() + (S.sheet ? hojaCerdas() : '');
+  if (S.vista !== 'home') scrollTo(0, y);
+  if (S.sheet) { const q = $('#qCerda'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
+}
+function enlazarLogin() {
+  $('#fLogin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = $('#lEmail').value.trim(), pass = $('#lPass').value;
+    const btn = $('#fLogin button'); btn.disabled = true; btn.textContent = 'Entrando…';
+    try {
+      const r = await fetch(API + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pass }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'No se pudo entrar');
+      S.token = d.token; S.usuario = d.usuario; S.necesitaLogin = false; S.loginErr = '';
+      LS.set('ag_token', S.token); LS.set('ag_usuario', S.usuario); LS.set('ag_email', email);
+      S.vista = 'home'; render();
+      try { await traerDatos(); } catch {}
+      render(); sincronizar();
+    } catch (err) {
+      S.loginErr = err.name === 'TypeError' ? 'Sin conexión. Necesitas señal para iniciar sesión.' : err.message;
+      btn.disabled = false; btn.textContent = 'Entrar'; $('#lErr').textContent = S.loginErr;
+    }
+  });
+}
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act],[data-seg]');
+  if (!el) return;
+  if (el.dataset.seg) { S.form.vals[el.dataset.seg] = el.dataset.val; return render(); }
+  const act = el.dataset.act; if (act !== undefined) e.preventDefault();
+  if (act.startsWith('form:')) return abrirForm(act.slice(5));
+  switch (act) {
+    case 'atras': history.back(); break;
+    case 'recelos': ir('recelos'); break;
+    case 'alertas': ir('alertas'); break;
+    case 'tareas': ir('tareas'); break;
+    case 'envios': ir('envios'); break;
+    case 'sync': sincronizar(); break;
+    case 'refrescar':
+      toast('Actualizando…');
+      try { await traerDatos(); toast('✓ Datos actualizados'); } catch { toast(S.necesitaLogin ? 'Inicia sesión otra vez' : 'Sin señal: se conservan los datos anteriores'); }
+      render(); break;
+    case 'salir':
+      if (S.cola.some(o => o.estado === 'pendiente') && !confirm('Hay registros sin enviar en este celular. Se enviarán cuando vuelvas a iniciar sesión. ¿Cerrar sesión?')) break;
+      S.token = null; S.usuario = null; LS.del('ag_token'); LS.del('ag_usuario'); S.vista = 'home'; render(); break;
+    case 'relogin': S.vista = 'login'; render(); break;
+    case 'instalar': if (S.instalar) { S.instalar.prompt(); S.instalar = null; } break;
+    case 'elegir-cerda': S.sheet = { q: '', todas: false }; render(); break;
+    case 'cerrar-hoja': S.sheet = null; render(); break;
+    case 'todas': S.sheet.todas = !S.sheet.todas; render(); break;
+    case 'pick': S.form.vals.cerda_id = Number(el.dataset.id); S.sheet = null; aplicarDefectos(); render(); break;
+    case 'jornada': S.recel.jornada = el.dataset.j; render(); break;
+    case 'rfiltro': S.recel.filtro = el.dataset.f; render(); break;
+    case 'rec': marcarRecelo(Number(el.dataset.id), el.dataset.r); break;
+    case 'servir': abrirForm('servicio', { cerda_id: Number(el.dataset.id) }); break;
+    case 'alerta': {
+      const id = Number(el.dataset.id), a = el.dataset.a;
+      if (a === 'recelos') { S.recel.filtro = 'servida'; ir('recelos'); }
+      else if (a === 'recelos_vacia') { S.recel.filtro = 'vacia'; ir('recelos'); }
+      else abrirForm(a, { cerda_id: id });
+      break;
+    }
+    case 'tarea': {
+      const t = Number(el.dataset.t), c = el.dataset.c ? Number(el.dataset.c) : null, f = el.dataset.f;
+      const ev = (S.tareas?.eventos || []).find(x => x.tarea_id === t && x.cerda_id === c && x.fecha === f);
+      encolar({ tipo: 'tarea', clave_tarea: `${t}-${c}-${f}`, ruta: '/api/tareas/aplicar',
+        body: { tarea_id: t, cerda_id: c, fecha_programada: f, fecha_aplicada: hoy(), operario: S.usuario?.nombre || null },
+        resumen: `Tarea hecha · ${ev?.tarea || ''} · ${ev?.animal || ''}` });
+      toast('✓ Tarea registrada'); render(); break;
+    }
+    case 'descartar': S.cola = S.cola.filter(o => o.id !== el.dataset.id); guardarCola(); render(); break;
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'qCerda') {
+    S.sheet.q = t.value;
+    const f = FORMS[S.form.tipo].campos.find(c => c.t === 'cerda');
+    let l = cerdasVista(); if (f.filtro && !S.sheet.todas) l = l.filter(c => f.filtro.includes(c.estado));
+    const total = l.length; if (t.value) l = l.filter(c => c.arete.toLowerCase().includes(t.value.toLowerCase()));
+    $('#lstCerda').innerHTML = listaCerdasHtml(l, total); return;
+  }
+  if (t.dataset.k && S.form) S.form.vals[t.dataset.k] = t.value;
+  if (S.form?.tipo === 'pesaje' && (t.dataset.k === 'cantidad' || t.dataset.k === 'peso_total')) {
+    const n = num(S.form.vals.cantidad), tt = num(S.form.vals.peso_total), el = $('#promLote');
+    if (el) el.textContent = (n > 0 && tt > 0) ? `Promedio: ${(tt / n).toFixed(1)} kg por animal` : '';
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'recFecha') { S.recel.fecha = t.value || hoy(); render(); }
+  else if (t.dataset.k === 'lote' && S.form) { S.form.vals.lote = t.value; render(); }
+});
+document.addEventListener('submit', e => { if (e.target.id === 'fReg') { e.preventDefault(); guardarForm(); } });
+
+// ---------- Instalación y arranque ----------
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.instalar = e; if (S.vista === 'home' || !S.token) render(); });
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+history.replaceState({ vista: 'home' }, '');
+render();
+if (S.token && navigator.onLine) sincronizar();
+</script>
+</body>
+</html>
