@@ -95,6 +95,7 @@ tr:last-child td{border-bottom:none}
       <a href="informes.html" class="activo">Informes de cría</a>
       <a href="tareas.html">Tareas y vacunación</a>
       <a href="ceba.html">Ceba</a>
+      <a href="planta.html">Planta y alimento</a>
     </nav>
     <div class="side-foot">
       <div class="nom" id="foot-nom">—</div>
@@ -187,7 +188,7 @@ tr:last-child td{border-bottom:none}
         <div class="campo-m"><label>Costo por bulto ($)</label><input id="co-costo" type="number" step="0.01" min="0"></div>
       </div>
       <div class="grid2">
-        <div class="campo-m"><label>Tipo de alimento</label><input id="co-tipo" placeholder="ej. Gestación 14%"></div>
+        <div class="campo-m"><label>Referencia (descuenta del inventario de El Tres)</label><select id="co-ref"><option value="">— sin referencia —</option></select></div>
         <div class="campo-m"><label>Banda (opcional)</label><select id="co-banda"><option value="">—</option></select></div>
       </div>
       <div class="msg" id="co-msg"></div>
@@ -303,6 +304,7 @@ $('#btn-descarte').addEventListener('click', cargarDescarte);
 // CONSUMO modal
 $('#btn-consumo').addEventListener('click', async ()=>{
   $('#co-fecha').value = new Date().toISOString().slice(0,10);
+  try{ const rf = await api('/api/planta/referencias'); $('#co-ref').innerHTML='<option value="">— sin referencia —</option>'+rf.filter(r=>r.activa).map(r=>`<option value="${r.id}">${r.nombre}</option>`).join(''); }catch{}
   try{ const bandas = await api('/api/informes/bandas'); $('#co-banda').innerHTML='<option value="">—</option>'+bandas.map(b=>`<option value="${b.id}">${b.nombre}</option>`).join(''); }catch{}
   $('#modal-bg').classList.add('abierto');
 });
@@ -310,7 +312,7 @@ $('#modal-cerrar').addEventListener('click',()=>$('#modal-bg').classList.remove(
 $('#co-cancelar').addEventListener('click',()=>$('#modal-bg').classList.remove('abierto'));
 $('#co-guardar').addEventListener('click', async ()=>{
   const body={ fecha:$('#co-fecha').value, fase:$('#co-fase').value, bultos:$('#co-bultos').value,
-    costo_bulto:$('#co-costo').value||null, tipo_alimento:$('#co-tipo').value.trim()||null, banda_id:$('#co-banda').value||null };
+    costo_bulto:$('#co-costo').value||null, referencia_id:$('#co-ref').value||null, banda_id:$('#co-banda').value||null };
   const msg=$('#co-msg'); msg.className='msg';
   try{ await api('/api/informes/consumos',{method:'POST',body:JSON.stringify(body)}); $('#modal-bg').classList.remove('abierto'); cargarCostos(); }
   catch(e){ msg.className='msg error'; msg.textContent=e.message; }

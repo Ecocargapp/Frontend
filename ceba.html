@@ -88,6 +88,7 @@ tr:last-child td{border-bottom:none}
       <a href="informes.html">Informes de cría</a>
       <a href="tareas.html">Tareas y vacunación</a>
       <a href="ceba.html" class="activo">Ceba</a>
+      <a href="planta.html">Planta y alimento</a>
     </nav>
     <div class="side-foot">
       <div class="nom" id="foot-nom">—</div>
@@ -144,7 +145,7 @@ tr:last-child td{border-bottom:none}
           <div class="campo"><label>Fecha</label><input id="c-fecha" type="date"></div>
           <div class="campo"><label>Bultos (40 kg)</label><input id="c-bultos" type="number" step="0.01"></div>
           <div class="campo"><label>Costo/bulto ($)</label><input id="c-costo" type="number" step="0.01"></div>
-          <div class="campo"><label>Tipo alimento</label><input id="c-tipo" placeholder="Finalizador, Levante..."></div>
+          <div class="campo"><label>Referencia (descuenta inventario)</label><select id="c-tipo"><option value="">— sin referencia —</option></select></div>
           <button class="btn-accent" id="btn-cons">Registrar</button>
         </div>
         <div class="msg" id="c-msg"></div>
@@ -226,7 +227,8 @@ const money = n => n==null?'—':'$'+Number(n).toLocaleString('es-CO',{maximumFr
 const fmt = n => n==null?'—':Number(n).toLocaleString('es-CO',{maximumFractionDigits:2});
 let granjaId = null, ultimaLiq = null;
 
-(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre;}catch{} })();
+(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre;}catch{}
+  try{ const rf=await api('/api/planta/referencias'); $('#c-tipo').innerHTML='<option value="">— sin referencia —</option>'+rf.filter(r=>r.activa).map(r=>`<option value="${r.id}">${r.nombre}</option>`).join(''); }catch{} })();
 $('#btn-logout').addEventListener('click',()=>{ sessionStorage.removeItem('agrosoft_token'); location.href='index.html'; });
 
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
@@ -346,7 +348,7 @@ $('#btn-cons').addEventListener('click', async ()=>{
   const loteId = +$('#c-lote').value;
   if(!loteId){ $('#c-msg').className='msg error'; $('#c-msg').textContent='Esta granja no tiene lotes. Traslada un lote primero.'; return; }
   const body={ granja_id:granjaId, lote_id:loteId, fecha:$('#c-fecha').value, bultos:+$('#c-bultos').value,
-    costo_bulto:+$('#c-costo').value||null, tipo_alimento:$('#c-tipo').value.trim()||null };
+    costo_bulto:+$('#c-costo').value||null, referencia_id:$('#c-tipo').value||null };
   const msg=$('#c-msg'); msg.className='msg';
   try{
     await api('/api/ceba/consumo',{method:'POST',body:JSON.stringify(body)});
