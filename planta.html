@@ -123,29 +123,38 @@ h2.sec{font-size:15px;font-weight:800;margin:6px 0 10px;color:var(--acero-osc)}
     <div class="topbar">
       <div><div class="eyebrow">Planta de concentrados</div><h1>Planta y alimento</h1></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-ghost" id="btn-ajuste">+ Ajuste / inventario inicial</button>
+        <button class="btn-accent" id="btn-rec">+ Recepción materia prima</button>
+        <button class="btn-accent" id="btn-bache">+ Bache de producción</button>
         <button class="btn-accent" id="btn-desp">+ Despacho</button>
-        <button class="btn-accent" id="btn-prod">+ Producción</button>
       </div>
     </div>
     <div id="alertas"></div>
     <div class="tabs">
       <button data-tab="inventario" class="activo">Inventario</button>
-      <button data-tab="produccion">Producción</button>
+      <button data-tab="recepciones">Recepciones</button>
+      <button data-tab="baches">Baches</button>
       <button data-tab="despachos">Despachos</button>
       <button data-tab="ajustes">Ajustes</button>
     </div>
 
     <section class="vista activa" data-tab="inventario">
-      <div id="inv-granjas"></div>
-      <h2 class="sec">Planta de concentrados</h2>
+      <h2 class="sec">Materias primas en la planta <small style="font-weight:500;color:var(--texto-sec)">· kg</small></h2>
+      <div class="tabla-wrap"><table><thead><tr><th>Materia prima</th><th class="n">Recibido</th><th class="n">Usado en baches</th><th class="n">Ajustes</th><th class="n">Inventario (kg)</th><th class="n">Gasto diario (7 d)</th><th class="n">Días restantes</th></tr></thead><tbody id="tb-mp"></tbody></table></div>
+      <h2 class="sec">Concentrado terminado en la planta <small style="font-weight:500;color:var(--texto-sec)">· bultos de 40 kg</small></h2>
       <div class="tabla-wrap"><table><thead><tr><th>Referencia</th><th class="n">Producido</th><th class="n">Despachado</th><th class="n">Ajustes</th><th class="n">Inventario (bultos)</th></tr></thead><tbody id="tb-planta"></tbody></table></div>
-      <p class="nota">Cada bulto = 40 kg. El inventario de una granja = bultos despachados a ella − bultos que el operario registra como consumidos (con su referencia) + ajustes. El promedio diario usa los últimos 7 días. Alerta cuando quedan menos de 3 días.</p>
+      <h2 class="sec" style="margin-top:26px">Concentrado en cada granja</h2>
+      <div id="inv-granjas"></div>
+      <p class="nota">Cada bulto = 40 kg. El inventario de materia prima = recibido − usado en baches + ajustes. El de la planta = producido en baches − despachado + ajustes. El inventario de una granja = bultos despachados a ella − bultos que el operario registra como consumidos (con su referencia) + ajustes. El promedio diario usa los últimos 7 días. Alerta cuando quedan menos de 3 días.</p>
     </section>
 
-    <section class="vista" data-tab="produccion">
-      <div class="filtros"><div class="campo"><label>Desde</label><input id="pr-desde" type="date"></div><div class="campo"><label>Hasta</label><input id="pr-hasta" type="date"></div><button class="btn-ghost" data-filtrar="produccion">Filtrar</button></div>
-      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Referencia</th><th class="n">Bultos</th><th>Registró</th><th>Observaciones</th><th></th></tr></thead><tbody id="tb-produccion"></tbody></table></div>
+    <section class="vista" data-tab="recepciones">
+      <div class="filtros"><div class="campo"><label>Desde</label><input id="re-desde" type="date"></div><div class="campo"><label>Hasta</label><input id="re-hasta" type="date"></div><button class="btn-ghost" data-filtrar="recepciones">Filtrar</button></div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Materia prima</th><th class="n">Kg</th><th>Lote</th><th>Color</th><th class="n">Temp. °C</th><th class="n">Humedad %</th><th>Proveedor</th><th>Registró</th><th></th></tr></thead><tbody id="tb-recepciones"></tbody></table></div>
+    </section>
+
+    <section class="vista" data-tab="baches">
+      <div class="filtros"><div class="campo"><label>Desde</label><input id="ba-desde" type="date"></div><div class="campo"><label>Hasta</label><input id="ba-hasta" type="date"></div><button class="btn-ghost" data-filtrar="baches">Filtrar</button></div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Alimento</th><th class="n">Bultos</th><th class="n">Kg insumos</th><th>Materias primas usadas</th><th>Registró</th><th></th></tr></thead><tbody id="tb-baches"></tbody></table></div>
     </section>
 
     <section class="vista" data-tab="despachos">
@@ -154,7 +163,11 @@ h2.sec{font-size:15px;font-weight:800;margin:6px 0 10px;color:var(--acero-osc)}
     </section>
 
     <section class="vista" data-tab="ajustes">
+      <div class="export-bar"><button class="btn-ghost" id="btn-ajuste">+ Ajuste de concentrado</button><button class="btn-ghost" id="btn-ajuste-mp">+ Ajuste de materia prima</button></div>
+      <h2 class="sec">Concentrado (bultos)</h2>
       <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Ubicación</th><th>Referencia</th><th class="n">Bultos</th><th>Motivo</th><th>Registró</th><th></th></tr></thead><tbody id="tb-ajustes"></tbody></table></div>
+      <h2 class="sec">Materias primas (kg)</h2>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Materia prima</th><th class="n">Kg</th><th>Motivo</th><th>Registró</th><th></th></tr></thead><tbody id="tb-mp-ajustes"></tbody></table></div>
       <p class="nota">Usa un ajuste para cargar el inventario que ya hay hoy en cada granja (positivo) o corregir diferencias (positivo suma, negativo resta).</p>
     </section>
   </main>
@@ -176,11 +189,12 @@ const api = async (r,o={})=>{ const h={'Content-Type':'application/json','Author
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt = n => n==null?'—':new Intl.NumberFormat('es-CO',{maximumFractionDigits:2}).format(n);
 const hoy = () => new Date().toLocaleDateString('en-CA');
-let esAdmin=false, refs=[], granjas=[];
+let rolActual='', esAdmin=false, refs=[], granjas=[], mps=[];
 const ESTADO={ok:'Suficiente',atencion:'Atención',alerta:'Alerta <3 días',agotado:'Agotado',sin_consumo:'Sin consumo'};
 
-(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre; esAdmin=yo.rol==='admin';}catch{}
-  [refs,granjas]=await Promise.all([api('/api/planta/referencias'),api('/api/planta/granjas')]);
+(async()=>{ try{const yo=await api('/api/yo'); $('#foot-nom').textContent=yo.nombre; esAdmin=yo.rol==='admin'; rolActual=yo.rol;}catch{}
+  [refs,granjas,mps]=await Promise.all([api('/api/planta/referencias'),api('/api/planta/granjas'),api('/api/planta/materias-primas')]);
+  if(rolActual==='planta') document.querySelectorAll('.nav a:not(.activo)').forEach(a=>a.style.display='none');
   cargarInventario(); })();
 $('#btn-logout').addEventListener('click',()=>{ sessionStorage.removeItem('agrosoft_token'); location.href='index.html'; });
 
@@ -190,7 +204,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',
   cargarTab(b.dataset.tab);
 }));
 document.querySelectorAll('[data-filtrar]').forEach(b=>b.addEventListener('click',()=>cargarTab(b.dataset.filtrar)));
-function cargarTab(t){ return ({inventario:cargarInventario,produccion:cargarProduccion,despachos:cargarDespachos,ajustes:cargarAjustes})[t](); }
+function cargarTab(t){ return ({inventario:cargarInventario,recepciones:cargarRecepciones,baches:cargarBaches,despachos:cargarDespachos,ajustes:cargarAjustes})[t](); }
 const rango = p => { const d=$('#'+p+'-desde').value,h=$('#'+p+'-hasta').value; const q=new URLSearchParams(); if(d)q.set('desde',d); if(h)q.set('hasta',h); return q.toString()?'?'+q:''; };
 const btnDel = (ruta,id) => esAdmin?`<button class="x" title="Eliminar" data-del="${ruta}/${id}">✕</button>`:'';
 document.addEventListener('click',async e=>{ const b=e.target.closest('[data-del]'); if(!b) return;
@@ -213,12 +227,19 @@ async function cargarInventario(){
       <td class="n ${i.inventario<0?'neg':''}"><b>${fmt(i.inventario)}</b></td><td class="n">${fmt(i.prom_dia)}</td><td class="n">${i.dias==null?'—':fmt(i.dias)}</td><td><span class="est ${i.estado}">${ESTADO[i.estado]}</span></td></tr>`).join('')
       || '<tr><td colspan="8" style="color:var(--texto-sec)">Sin movimientos todavía. Registra un despacho a esta granja o un ajuste de inventario inicial.</td></tr>'}
     </tbody></table></div>`).join('');
+  $('#tb-mp').innerHTML = inv.materias_primas.map(m=>`<tr><td><b>${esc(m.nombre)}</b></td><td class="n">${fmt(m.recibido)}</td><td class="n">${fmt(m.usado)}</td><td class="n">${fmt(m.ajustes)}</td>
+    <td class="n ${m.inventario<0?'neg':''}"><b>${fmt(m.inventario)}</b></td><td class="n">${fmt(m.prom_dia_kg)}</td><td class="n">${m.dias==null?'—':fmt(m.dias)}</td></tr>`).join('');
   $('#tb-planta').innerHTML = inv.planta.map(p=>`<tr><td><b>${esc(p.referencia)}</b></td><td class="n">${fmt(p.producido)}</td><td class="n">${fmt(p.despachado)}</td><td class="n">${fmt(p.ajustes)}</td><td class="n ${p.inventario<0?'neg':''}"><b>${fmt(p.inventario)}</b></td></tr>`).join('')
     || '<tr><td colspan="5" style="color:var(--texto-sec)">Aún no hay producción registrada.</td></tr>';
 }
-async function cargarProduccion(){
-  const r = await api('/api/planta/produccion'+rango('pr'));
-  $('#tb-produccion').innerHTML = r.map(x=>`<tr><td>${x.fecha}</td><td>${esc(x.referencia)}</td><td class="n"><b>${fmt(x.bultos)}</b></td><td>${esc(x.usuario||'')}</td><td>${esc(x.observaciones||'')}</td><td>${btnDel('produccion',x.id)}</td></tr>`).join('')||'<tr><td colspan="6" style="color:var(--texto-sec)">Sin registros.</td></tr>';
+async function cargarRecepciones(){
+  const r = await api('/api/planta/recepciones'+rango('re'));
+  $('#tb-recepciones').innerHTML = r.map(x=>`<tr><td>${x.fecha}</td><td><b>${esc(x.materia_prima)}</b></td><td class="n"><b>${fmt(x.kg)}</b></td><td>${esc(x.lote||'')}</td><td>${esc(x.color||'')}</td><td class="n">${x.temperatura??'—'}</td><td class="n">${x.humedad??'—'}</td><td>${esc(x.proveedor||'')}</td><td>${esc(x.usuario||'')}</td><td>${btnDel('recepciones',x.id)}</td></tr>`).join('')||'<tr><td colspan="10" style="color:var(--texto-sec)">Sin registros.</td></tr>';
+}
+async function cargarBaches(){
+  const r = await api('/api/planta/baches'+rango('ba'));
+  $('#tb-baches').innerHTML = r.map(x=>`<tr><td>${x.fecha}</td><td><b>${esc(x.referencia)}</b></td><td class="n"><b>${fmt(x.bultos)}</b></td><td class="n">${fmt(x.kg_insumos)}</td>
+    <td style="font-size:12.5px">${x.insumos.map(i=>esc(i.materia_prima)+' '+fmt(i.kg)+' kg').join(' · ')}</td><td>${esc(x.usuario||'')}</td><td>${btnDel('baches',x.id)}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--texto-sec)">Sin baches.</td></tr>';
 }
 async function cargarDespachos(){
   const r = await api('/api/planta/despachos'+rango('de'));
@@ -226,6 +247,8 @@ async function cargarDespachos(){
 }
 async function cargarAjustes(){
   const r = await api('/api/planta/ajustes');
+  const rm = await api('/api/planta/mp-ajustes');
+  $('#tb-mp-ajustes').innerHTML = rm.map(x=>`<tr><td>${x.fecha}</td><td>${esc(x.materia_prima)}</td><td class="n ${x.kg<0?'neg':''}"><b>${fmt(x.kg)}</b></td><td>${esc(x.motivo||'')}</td><td>${esc(x.usuario||'')}</td><td>${btnDel('mp-ajustes',x.id)}</td></tr>`).join('')||'<tr><td colspan="6" style="color:var(--texto-sec)">Sin ajustes.</td></tr>';
   $('#tb-ajustes').innerHTML = r.map(x=>`<tr><td>${x.fecha}</td><td>${esc(x.ubicacion)}</td><td>${esc(x.referencia)}</td><td class="n ${x.bultos<0?'neg':''}"><b>${fmt(x.bultos)}</b></td><td>${esc(x.motivo||'')}</td><td>${esc(x.usuario||'')}</td><td>${btnDel('ajustes',x.id)}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--texto-sec)">Sin ajustes.</td></tr>';
 }
 
@@ -238,23 +261,47 @@ $('#m-ok').onclick=async()=>{ try{ await accionOk(); cerrar(); cargarTab(documen
 const optsRef = () => refs.filter(r=>r.activa).map(r=>`<option value="${r.id}">${esc(r.nombre)}</option>`).join('');
 const optsGranja = () => granjas.map(g=>`<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
 const post = (r,b)=>api('/api/planta/'+r,{method:'POST',body:JSON.stringify(b)});
-$('#btn-prod').onclick=()=>modal('Registrar producción',`
+const optsMp = () => mps.filter(m=>m.activa).map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+$('#btn-rec').onclick=()=>modal('Recepción de materia prima',`
   <div class="grid2"><div class="campo-m"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
-  <div class="campo-m"><label>Referencia *</label><select id="f-ref">${optsRef()}</select></div></div>
+  <div class="campo-m"><label>Materia prima *</label><select id="f-mp">${optsMp()}</select></div></div>
+  <div class="grid2"><div class="campo-m"><label>Cantidad recibida (kg) *</label><input id="f-kg" type="number" step="0.01" min="0"></div>
+  <div class="campo-m"><label>Lote</label><input id="f-lote"></div></div>
+  <div class="grid2"><div class="campo-m"><label>Color</label><input id="f-color" placeholder="ej. Amarillo"></div>
+  <div class="campo-m"><label>Proveedor</label><input id="f-prov"></div></div>
+  <div class="grid2"><div class="campo-m"><label>Temperatura (°C)</label><input id="f-temp" type="number" step="0.1"></div>
+  <div class="campo-m"><label>Humedad (%)</label><input id="f-hum" type="number" step="0.1" min="0" max="100"></div></div>
+  <div class="campo-m"><label>Observaciones</label><input id="f-obs"></div>`,
+  ()=>post('recepciones',{fecha:$('#f-fecha').value,materia_prima_id:+$('#f-mp').value,kg:+$('#f-kg').value,lote:$('#f-lote').value,color:$('#f-color').value,proveedor:$('#f-prov').value,temperatura:$('#f-temp').value,humedad:$('#f-hum').value,observaciones:$('#f-obs').value}));
+function filaInsumo(){ return `<div class="grid2" style="grid-template-columns:1fr 130px 30px;align-items:end;margin-bottom:8px"><select class="i-mp">${optsMp()}</select><input class="i-kg" type="number" step="0.01" min="0" placeholder="kg"><button type="button" class="x i-del">✕</button></div>`; }
+$('#btn-bache').onclick=()=>{ modal('Bache de producción',`
+  <div class="grid2"><div class="campo-m"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
+  <div class="campo-m"><label>Alimento producido *</label><select id="f-ref">${optsRef()}</select></div></div>
+  <div class="campo-m"><label>Materias primas usadas (kg) *</label><div id="ins-lista">${filaInsumo()}</div><button type="button" class="btn-ghost" id="ins-add">+ Agregar materia prima</button></div>
   <div class="campo-m"><label>Bultos producidos (40 kg) *</label><input id="f-bultos" type="number" step="0.01" min="0"></div>
   <div class="campo-m"><label>Observaciones</label><input id="f-obs"></div>`,
-  ()=>post('produccion',{fecha:$('#f-fecha').value,referencia_id:+$('#f-ref').value,bultos:+$('#f-bultos').value,observaciones:$('#f-obs').value}));
+  async()=>{ const insumos=[...document.querySelectorAll('#ins-lista > div')].map(d=>({materia_prima_id:+d.querySelector('.i-mp').value,kg:+d.querySelector('.i-kg').value})).filter(i=>i.kg>0);
+    const r=await post('baches',{fecha:$('#f-fecha').value,referencia_id:+$('#f-ref').value,bultos:+$('#f-bultos').value,insumos,observaciones:$('#f-obs').value});
+    if(r.materias_negativas&&r.materias_negativas.length) alert('Aviso: quedó inventario negativo en: '+r.materias_negativas.map(m=>m.nombre+' ('+fmt(m.inventario)+' kg)').join(', ')+'. Revisa que las recepciones estén registradas.'); });
+  $('#ins-add').onclick=()=>$('#ins-lista').insertAdjacentHTML('beforeend',filaInsumo());
+  $('#ins-lista').onclick=e=>{ if(e.target.classList.contains('i-del')&&document.querySelectorAll('#ins-lista > div').length>1) e.target.closest('div').remove(); }; };
+$('#btn-ajuste-mp').onclick=()=>modal('Ajuste de materia prima',`
+  <div class="grid2"><div class="campo-m"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
+  <div class="campo-m"><label>Materia prima *</label><select id="f-mp">${optsMp()}</select></div></div>
+  <div class="campo-m"><label>Kilos (+ suma, − resta) *</label><input id="f-kg" type="number" step="0.01"></div>
+  <div class="campo-m"><label>Motivo</label><input id="f-mot" placeholder="Inventario inicial, corrección…"></div>`,
+  ()=>post('mp-ajustes',{fecha:$('#f-fecha').value,materia_prima_id:+$('#f-mp').value,kg:+$('#f-kg').value,motivo:$('#f-mot').value}));
 $('#btn-desp').onclick=()=>{ modal('Registrar despacho',`
   <div class="grid2"><div class="campo-m"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
   <div class="campo-m"><label>Referencia *</label><select id="f-ref">${optsRef()}</select></div></div>
   <div class="grid2"><div class="campo-m"><label>Bultos *</label><input id="f-bultos" type="number" step="0.01" min="0"></div>
-  <div class="campo-m"><label>Destino *</label><select id="f-dest"><option value="granja">A una granja</option><option value="venta">Venta</option></select></div></div>
+  <div class="campo-m"><label>Destino *</label><select id="f-dest"><option value="granja">A granja propia</option><option value="venta">Venta</option></select></div></div>
   <div class="campo-m" id="w-granja"><label>Granja *</label><select id="f-granja">${optsGranja()}</select></div>
   <div class="campo-m" id="w-cli" style="display:none"><label>Cliente</label><input id="f-cli"></div>
   <div class="campo-m"><label>Observaciones</label><input id="f-obs"></div>`,
   async()=>{ const r=await post('despachos',{fecha:$('#f-fecha').value,referencia_id:+$('#f-ref').value,bultos:+$('#f-bultos').value,destino:$('#f-dest').value,
     granja_id:+$('#f-granja').value||null,cliente:$('#f-cli').value,observaciones:$('#f-obs').value});
-    if(r.planta_inventario!=null&&r.planta_inventario<0) alert('Aviso: la planta quedó con inventario negativo ('+fmt(r.planta_inventario)+' bultos). Revisa que la producción esté registrada.'); });
+    if(r.planta_inventario!=null&&r.planta_inventario<0) alert('Aviso: la planta quedó con inventario de concentrado negativo ('+fmt(r.planta_inventario)+' bultos). Revisa que la producción esté registrada.'); });
   $('#f-dest').onchange=()=>{ const v=$('#f-dest').value==='granja'; $('#w-granja').style.display=v?'':'none'; $('#w-cli').style.display=v?'none':''; }; };
 $('#btn-ajuste').onclick=()=>modal('Ajuste de inventario',`
   <div class="grid2"><div class="campo-m"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>

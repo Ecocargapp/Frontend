@@ -474,6 +474,39 @@ FORMS.planta_desp = {
       granja_id: v.destino === 'granja' ? num(v.granja_al) : null, cliente: v.destino === 'venta' ? (v.cliente || null) : null, observaciones: v.obs || null },
     resumen: () => `Despacho · ${refNom(v.referencia)} · ${num(v.bultos)} bultos → ${v.destino === 'granja' ? (granjaAlNom(v.granja_al) || 'granja') : 'venta' + (v.cliente ? ' (' + v.cliente + ')' : '')}` })
 };
+FORMS.planta_mp = {
+  titulo: 'Recepción de materia prima', icono: '🌽', ayuda: 'Lo que llega a la planta: elige la materia prima y escribe cuántos kilos recibiste. Los datos de calidad ayudan a llevar el control.',
+  campos: [
+    { k: 'fecha', t: 'fecha', label: 'Fecha de recepción' },
+    { k: 'mp', t: 'mp', label: 'Materia prima' },
+    { k: 'kg', t: 'dec', label: 'Cantidad recibida (kg)' },
+    { k: 'lote', t: 'texto', label: 'Lote', opc: true },
+    { k: 'color', t: 'texto', label: 'Color', opc: true },
+    { k: 'temperatura', t: 'dec', label: 'Temperatura (°C)', opc: true },
+    { k: 'humedad', t: 'dec', label: 'Humedad (%)', opc: true },
+    { k: 'proveedor', t: 'texto', label: 'Proveedor', opc: true },
+    { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+  ],
+  armar: v => ({ ruta: '/api/planta/recepciones',
+    body: { fecha: v.fecha, materia_prima_id: num(v.mp), kg: num(v.kg), lote: v.lote || null, color: v.color || null,
+      temperatura: num(v.temperatura), humedad: num(v.humedad), proveedor: v.proveedor || null, observaciones: v.obs || null },
+    resumen: () => `Recepción · ${mpNom(v.mp)} · ${num(v.kg)} kg` })
+};
+FORMS.planta_bache = {
+  titulo: 'Bache de producción', icono: '🏭', ayuda: 'Un registro por bache: qué alimento hiciste, cuántos kilos usaste de cada materia prima y cuántos bultos (40 kg) salieron. Descuenta las materias primas y suma producto terminado.',
+  campos: [
+    { k: 'fecha', t: 'fecha', label: 'Fecha del bache' },
+    { k: 'referencia', t: 'ref', label: 'Alimento producido' },
+    { k: 'insumos', t: 'insumos', label: 'Materias primas usadas (kg)' },
+    { k: 'bultos', t: 'dec', label: 'Bultos producidos (40 kg)' },
+    { k: 'obs', t: 'area', label: 'Observaciones', opc: true }
+  ],
+  armar: v => { const ins = (v.insumos || []).filter(x => x.mp && num(x.kg) > 0); const tot = ins.reduce((a, x) => a + num(x.kg), 0);
+    return { ruta: '/api/planta/baches',
+      body: { fecha: v.fecha, referencia_id: num(v.referencia), bultos: num(v.bultos), insumos: ins.map(x => ({ materia_prima_id: num(x.mp), kg: num(x.kg) })), observaciones: v.obs || null },
+      resumen: () => `Bache · ${refNom(v.referencia)} · ${num(v.bultos)} bultos · ${Math.round(tot * 100) / 100} kg de insumos` }; }
+};
+const mpNom = id => ((S.datos?.alimento?.materias_primas || []).find(m => m.id === num(id)) || {}).nombre || '';
 const refNom = id => ((S.datos?.referencias || []).find(r => r.id === num(id)) || {}).nombre || '';
 const granjaAlNom = id => ((S.datos?.granjas_alimento || []).find(g => g.id === num(id)) || {}).nombre || '';
 const granjaCria = () => (S.datos?.granjas_alimento || []).find(g => g.tipo === 'cria');
@@ -483,6 +516,8 @@ const FASE_DE_REF = { 'gestación': 'gestacion', 'lactancia': 'lactancia', 'prei
 function invMapa() {
   const A = S.datos?.alimento, m = { planta: {}, g: {} };
   const add = (o, k, n) => { o[k] = (o[k] || 0) + n; };
+  m.mp = {};
+  for (const x of A?.materias_primas || []) m.mp[x.id] = x.inventario;
   for (const p of A?.planta || []) m.planta[p.referencia_id] = p.inventario;
   for (const g of A?.granjas || []) for (const it of g.items) m.g[g.id + '|' + it.referencia_id] = it.inventario;
   const guardado = S.datos?.guardado || 0;
@@ -493,10 +528,13 @@ function invMapa() {
     if (op.tipo === 'alim_cria') { const g = granjaCria(); if (g) add(m.g, g.id + '|' + b.referencia_id, -n); }
     else if (op.tipo === 'alim_ceba') { const g = (S.datos?.granjas_alimento || []).find(x => x.granja_ceba_id === b.granja_id); if (g) add(m.g, g.id + '|' + b.referencia_id, -n); }
     else if (op.tipo === 'planta_prod') add(m.planta, b.referencia_id, n);
+    else if (op.tipo === 'planta_mp') add(m.mp, b.materia_prima_id, b.kg || 0);
+    else if (op.tipo === 'planta_bache') { add(m.planta, b.referencia_id, n); for (const i of b.insumos || []) add(m.mp, i.materia_prima_id, -i.kg); }
     else if (op.tipo === 'planta_desp') { add(m.planta, b.referencia_id, -n); if (b.destino === 'granja') add(m.g, b.granja_id + '|' + b.referencia_id, n); }
   }
   return m;
 }
+const REFS_DEF = { ceba: ['Preinicio', 'Inicio', 'Levante', 'Finalizador'], cria: ['Gestación', 'Lactancia', 'Preinicio', 'Inicio'] };
 // Filas para la pantalla de inventario (con días restantes según el promedio de la última semana)
 function invFilas() {
   const m = invMapa(), A = S.datos?.alimento, out = [];
@@ -504,9 +542,9 @@ function invFilas() {
     const filas = [];
     for (const r of S.datos?.referencias || []) {
       const k = g.id + '|' + r.id;
-      if (!(k in m.g)) continue;
+      if (!(k in m.g) && !(REFS_DEF[g.tipo] || []).includes(r.nombre)) continue;
       const it = (A?.granjas || []).find(x => x.id === g.id)?.items.find(x => x.referencia_id === r.id);
-      const prom = it?.prom_dia || 0, inv = Math.round(m.g[k] * 100) / 100;
+      const prom = it?.prom_dia || 0, inv = Math.round((m.g[k] || 0) * 100) / 100;
       const dias = prom > 0 ? Math.max(0, inv / prom) : null;
       const estado = prom <= 0 ? 'sin' : inv <= 0 ? 'agotado' : dias < 3 ? 'alerta' : dias < 6 ? 'atencion' : 'ok';
       filas.push({ ref: r.nombre, inv, prom, dias, estado });
@@ -516,25 +554,59 @@ function invFilas() {
   return out;
 }
 const nAlertasAlim = () => invFilas().reduce((n, g) => n + g.filas.filter(f => f.estado === 'alerta' || f.estado === 'agotado').length, 0);
-// Texto de ayuda bajo el formulario: inventario disponible y aviso si quedaría negativo
+// Granja cuyo inventario se descuenta en el formulario abierto
+function granjaDeForm() {
+  const f = S.form; if (!f) return null;
+  if (f.tipo === 'alim_cria') return granjaCria();
+  if (f.tipo === 'alim_ceba') { const l = loteDe(f.vals.lote); return l ? (S.datos?.granjas_alimento || []).find(x => x.granja_ceba_id === l.granja_ceba_id) || null : null; }
+  return null;
+}
+const r2n = x => Math.round(x * 100) / 100;
+// Saldo (bultos) de una referencia en el lugar que afecta el formulario; null si aún no se sabe
+function saldoRefForm(refId) {
+  const m = invMapa(), t = S.form?.tipo;
+  if (t === 'alim_cria' || t === 'alim_ceba') { const g = granjaDeForm(); return g ? (m.g[g.id + '|' + refId] || 0) : null; }
+  if (t === 'planta_prod' || t === 'planta_desp' || t === 'planta_bache') return m.planta[refId] || 0;
+  return null;
+}
+// Texto de ayuda bajo el formulario: saldos disponibles y avisos (nunca bloquean)
 function hintInv() {
   if (!S.form) return '';
   const { tipo, vals: v } = S.form, m = invMapa(), n = num(v.bultos) || 0;
   const linea = (txt, mal) => `<p class="hint" style="${mal ? 'color:var(--rojo);font-weight:600' : ''}">${txt}</p>`;
-  if (!v.referencia) return '';
-  const rn = refNom(v.referencia);
-  if (tipo === 'alim_cria' || tipo === 'alim_ceba') {
-    const g = tipo === 'alim_cria' ? granjaCria() : (S.datos?.granjas_alimento || []).find(x => x.granja_ceba_id === loteDe(v.lote)?.granja_ceba_id);
-    if (!g) return '';
-    const inv = m.g[g.id + '|' + v.referencia] || 0;
-    return linea(`Inventario de ${esc(rn)} en ${esc(g.nombre)}: <b>${inv}</b> bultos.`, false) +
-      (n > inv ? linea(`Con ${n} bultos el inventario quedaría en negativo (${Math.round((inv - n) * 100) / 100}). Verifica que la referencia sea la correcta; igual puedes guardar.`, true) : '');
+  if (tipo === 'planta_mp') {
+    if (!v.mp) return '';
+    const inv = m.mp[v.mp] || 0;
+    return linea(`Inventario de ${esc(mpNom(v.mp))}: <b>${r2n(inv)}</b> kg. Con esta recepción quedará en <b>${r2n(inv + (num(v.kg) || 0))}</b> kg.`);
   }
-  if (tipo === 'planta_prod') return linea(`En la planta hay <b>${m.planta[v.referencia] || 0}</b> bultos de ${esc(rn)}.`, false);
+  if (tipo === 'planta_bache') {
+    const ins = (v.insumos || []).filter(x => x.mp && num(x.kg) > 0), tot = ins.reduce((a, x) => a + num(x.kg), 0);
+    let h = '';
+    if (tot) h += linea(`Insumos: <b>${r2n(tot)}</b> kg${n ? ` · Producto: <b>${n}</b> bultos = <b>${n * 40}</b> kg` : ''}.`);
+    if (tot && n && (n * 40 > tot * 1.05 || n * 40 < tot * 0.85)) h += linea(`Los insumos (${r2n(tot)} kg) y el producto (${n * 40} kg) no cuadran. Revisa los kilos o los bultos; igual puedes guardar.`, true);
+    const usado = {}; ins.forEach(x => usado[x.mp] = (usado[x.mp] || 0) + num(x.kg));
+    const neg = Object.entries(usado).filter(([id, kg]) => (m.mp[id] || 0) - kg < 0).map(([id, kg]) => `${esc(mpNom(id))} (hay ${r2n(m.mp[id] || 0)} kg)`);
+    if (neg.length) h += linea(`Falta inventario registrado de: ${neg.join(', ')}. Revisa las recepciones; igual puedes guardar.`, true);
+    if (v.referencia) h += linea(`Producto terminado de ${esc(refNom(v.referencia))} en la planta: <b>${r2n(m.planta[v.referencia] || 0)}</b> bultos.`);
+    return h;
+  }
+  if (tipo === 'alim_cria' || tipo === 'alim_ceba') {
+    const g = granjaDeForm();
+    if (!g) return tipo === 'alim_ceba' ? linea('Elige el lote para ver el saldo de alimento de su granja.') : '';
+    if (!v.referencia) {
+      const lista = (S.datos?.referencias || []).map(r => [r.nombre, m.g[g.id + '|' + r.id] || 0]).filter(([nm, x]) => x || (REFS_DEF[g.tipo] || []).includes(nm));
+      return linea(`Saldo en <b>${esc(g.nombre)}</b>: ` + lista.map(([nm, x]) => `${esc(nm)} <b>${r2n(x)}</b>`).join(' · ') + ' bultos.');
+    }
+    const inv = m.g[g.id + '|' + v.referencia] || 0;
+    return linea(`Saldo de ${esc(refNom(v.referencia))} en ${esc(g.nombre)}: <b>${r2n(inv)}</b> bultos.`) +
+      (n > inv ? linea(`Con ${n} bultos el saldo quedaría en negativo (${r2n(inv - n)}). Verifica que la referencia sea la correcta; igual puedes guardar.`, true) : '');
+  }
+  if (tipo === 'planta_prod') return v.referencia ? linea(`En la planta hay <b>${r2n(m.planta[v.referencia] || 0)}</b> bultos de ${esc(refNom(v.referencia))}.`) : '';
   if (tipo === 'planta_desp') {
+    if (!v.referencia) return '';
     const inv = m.planta[v.referencia] || 0;
-    return linea(`En la planta hay <b>${inv}</b> bultos de ${esc(rn)}.`, false) +
-      (n > inv ? linea(`Estás despachando más de lo que hay registrado en la planta (${n} > ${inv}). Revisa la producción registrada; igual puedes guardar.`, true) : '');
+    return linea(`En la planta hay <b>${r2n(inv)}</b> bultos de ${esc(refNom(v.referencia))}.`) +
+      (n > inv ? linea(`Estás despachando más de lo que hay registrado en la planta (${n} > ${r2n(inv)}). Revisa la producción; igual puedes guardar.`, true) : '');
   }
   return '';
 }
@@ -598,6 +670,7 @@ function abrirForm(tipo, preset) {
   const vals = { fecha: hoy() };
   for (const c of f.campos) if (c.def !== undefined) vals[c.k] = c.def;
   if (tipo === 'parto') { vals.vivos = ''; vals.muertos = '0'; vals.momif = '0'; }
+  if (tipo === 'planta_bache') vals.insumos = [{ mp: '', kg: '' }];
   Object.assign(vals, preset || {});
   S.form = { tipo, vals, err: '' };
   if (vals.cerda_id) aplicarDefectos();
@@ -669,7 +742,8 @@ function vHome() {
     ${S.necesitaLogin ? `<div class="aviso rojo">Tu sesión venció. <b><a href="#" data-act="relogin">Inicia sesión</a></b> para enviar los registros pendientes.</div>` : ''}
     ${esPlanta() ? `<h2>Planta de concentrados</h2>
     <div class="grid">
-      ${tile('form:planta_prod', '🏭', 'Producción del día', 'Bultos por referencia')}
+      ${tile('form:planta_mp', '🌽', 'Recepción materia prima', 'Llegada de insumos')}
+      ${tile('form:planta_bache', '🏭', 'Bache de producción', 'Insumos y bultos')}
       ${tile('form:planta_desp', '🚚', 'Despacho', 'Granjas o venta')}
 ${tInv}    </div>` : `    <div class="grid">
       <button class="tile ancho" data-act="alertas"><span class="ic">📋</span><span><b>Pendientes de hoy</b><br><small>${al.length ? al.length + ' hembras por atender' : 'Nada urgente por ahora'}</small></span>${al.length ? `<span class="badge">${al.length}</span>` : ''}</button>
@@ -698,7 +772,7 @@ ${tInv}    </div>` : `    <div class="grid">
     </div>
     <h2>Alimento</h2>
     <div class="grid">
-${tInv}      ${S.usuario?.rol === 'admin' ? `${tile('form:planta_prod', '🏭', 'Producción planta', 'Bultos por referencia')}${tile('form:planta_desp', '🚚', 'Despacho planta', 'Granjas o venta')}` : ''}
+${tInv}      ${S.usuario?.rol === 'admin' ? `${tile('form:planta_mp', '🌽', 'Recepción materia prima', 'Llegada de insumos')}${tile('form:planta_bache', '🏭', 'Bache de producción', 'Insumos y bultos')}${tile('form:planta_desp', '🚚', 'Despacho planta', 'Granjas o venta')}` : ''}
     </div>`}
     <div class="pie">
       <button class="btn sec" data-act="envios" style="margin:0">Envíos${pend ? ` (${pend} por enviar)` : ''}</button>
@@ -732,7 +806,16 @@ function campoHtml(c, v) {
       `<button type="button" data-seg="${c.k}" data-val="${k}" class="${v[c.k] === k ? 'sel ' + (col === 'rojo' ? 'rojo' : col === 'ambar' ? 'ambar' : '') : ''}">${esc(t)}</button>`).join('')}</div>`;
     case 'grupo3': return `${lab}<div class="fila3">${c.items.map(([k, t]) =>
       `<div><small class="hint" style="display:block;margin:0 0 4px">${t}</small><input type="number" inputmode="numeric" min="0" step="1" data-k="${k}" value="${esc(v[k] ?? '')}"></div>`).join('')}</div>`;
-    case 'ref': return `${lab}<select data-k="referencia"><option value="">Elige la referencia</option>${(S.datos?.referencias || []).map(r => `<option value="${r.id}" ${String(v.referencia) === String(r.id) ? 'selected' : ''}>${esc(r.nombre)}</option>`).join('')}</select>`;
+    case 'ref': return `${lab}<select data-k="referencia"><option value="">Elige la referencia</option>${(S.datos?.referencias || []).map(r => { const sd = saldoRefForm(r.id);
+      return `<option value="${r.id}" ${String(v.referencia) === String(r.id) ? 'selected' : ''}>${esc(r.nombre)}${sd != null ? ' · saldo ' + r2n(sd) + ' bultos' : ''}</option>`; }).join('')}</select>`;
+    case 'mp': return `${lab}<select data-k="mp"><option value="">Elige la materia prima</option>${(S.datos?.alimento?.materias_primas || []).map(x => `<option value="${x.id}" ${String(v.mp) === String(x.id) ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select>`;
+    case 'insumos': { const m = invMapa(), mps = S.datos?.alimento?.materias_primas || [];
+      return `${lab}${(v.insumos || []).map((x, i) => `<div class="fila3" style="grid-template-columns:1fr 110px 40px;align-items:end;margin-bottom:4px">
+        <select data-ins="${i}" data-f="mp"><option value="">Materia prima</option>${mps.map(y => `<option value="${y.id}" ${String(x.mp) === String(y.id) ? 'selected' : ''}>${esc(y.nombre)}</option>`).join('')}</select>
+        <input type="number" inputmode="decimal" min="0" step="0.01" placeholder="kg" data-ins="${i}" data-f="kg" value="${esc(x.kg ?? '')}">
+        <button type="button" class="mini" data-act="ins-del" data-i="${i}" aria-label="Quitar">✕</button></div>
+        ${x.mp ? `<p class="hint" style="margin:0 0 8px">Inventario: ${r2n(m.mp[x.mp] || 0)} kg</p>` : ''}`).join('')}
+        <button type="button" class="btn sec" data-act="ins-add" style="margin:4px 0 12px">+ Agregar materia prima</button>`; }
     case 'granjaal': return `${lab}<select data-k="granja_al"><option value="">Elige la granja</option>${(S.datos?.granjas_alimento || []).map(g => `<option value="${g.id}" ${String(v.granja_al) === String(g.id) ? 'selected' : ''}>${esc(g.nombre)}</option>`).join('')}</select>`;
     case 'banda': return `${lab}<select data-k="banda"><option value="">Sin banda</option>${(S.datos?.bandas || []).map(b => `<option value="${b.id}" ${String(v.banda) === String(b.id) ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')}</select>`;
     case 'lote': {
@@ -805,8 +888,18 @@ function validar(tipo, v) {
     const n = num(v.lechones); if (n == null || n < 0 || n > 25) return 'Escribe los lechones destetados (0 a 25).';
     const p = num(v.peso); if (p != null && (p <= 0 || p > 400)) return 'El peso de la camada parece incorrecto.';
   }
-  if (tipo === 'alim_cria' || tipo === 'alim_ceba' || tipo === 'planta_prod' || tipo === 'planta_desp') {
+  if (tipo === 'alim_cria' || tipo === 'alim_ceba' || tipo === 'planta_prod' || tipo === 'planta_desp' || tipo === 'planta_bache') {
     const b = num(v.bultos); if (b == null || b <= 0 || b > (tipo.startsWith('planta') ? 5000 : 2000)) return 'Escribe los bultos (mayor que 0).';
+  }
+  if (tipo === 'planta_mp') {
+    const k = num(v.kg); if (k == null || k <= 0 || k > 5000000) return 'Escribe los kilos recibidos (mayor que 0).';
+    const h = num(v.humedad); if (h != null && (h < 0 || h > 100)) return 'La humedad debe estar entre 0 y 100 %.';
+    const t = num(v.temperatura); if (t != null && (t < -10 || t > 120)) return 'La temperatura parece incorrecta (°C).';
+  }
+  if (tipo === 'planta_bache') {
+    const filas = (v.insumos || []).filter(x => x.mp || x.kg);
+    if (!filas.length) return 'Agrega al menos una materia prima usada en el bache.';
+    for (const x of filas) { if (!x.mp) return 'Falta elegir la materia prima en una de las líneas.'; const k = num(x.kg); if (k == null || k <= 0) return 'Escribe los kilos de cada materia prima.'; }
   }
   if (tipo === 'muerte_ceba') {
     const n = num(v.cantidad), l = loteDe(v.lote);
@@ -831,6 +924,8 @@ function guardarForm() {
   // Se queda en el mismo formulario para registrar otro; limpia lo que cambia de un registro a otro
   for (const k of ['cerda_id', 'vivos', 'lechones', 'peso', 'peso_total', 'bultos', 'cantidad', 'verraco', 'dosis', 'obs', 'arete']) delete vals[k];
   if (tipo === 'mortalidad') vals.causa = 'Aplastados';
+  if (tipo === 'planta_bache') vals.insumos = [{ mp: '', kg: '' }];
+  if (tipo === 'planta_mp') for (const k of ['kg', 'lote', 'color', 'temperatura', 'humedad']) delete vals[k];
   if (tipo === 'parto') { vals.vivos = ''; vals.muertos = '0'; vals.momif = '0'; }
   S.form.err = '';
   render();
@@ -939,13 +1034,20 @@ function vInventario() {
   const gs = invFilas(), m = invMapa();
   const col = { alerta: 'var(--rojo)', agotado: 'var(--rojo)', atencion: '#B7791F', ok: 'var(--campo)', sin: 'var(--suave)' };
   const txt = f => f.estado === 'sin' ? 'sin consumo reciente' : f.estado === 'agotado' ? 'AGOTADO' : `${f.dias.toFixed(1)} días`;
-  const n = nAlertasAlim();
-  return `${barra('Inventario de alimento', 'Bultos de 40 kg', true)}<main>
+  const n = nAlertasAlim(), verPlanta = S.usuario?.rol !== 'operador';
+  const fila = (nom, sub, val, unidad, etq, color) => `<div class="li"><span><b>${esc(nom)}</b>${sub ? `<small>${sub}</small>` : ''}</span>
+      <span style="text-align:right"><b style="font-size:20px">${val}</b><small style="display:block;${color ? `color:${color};font-weight:700` : ''}">${etq || unidad}</small></span></div>`;
+  const planta = verPlanta ? `<h2>Materias primas en la planta</h2>${(S.datos?.alimento?.materias_primas || []).map(x => {
+      const inv = r2n(m.mp[x.id] ?? x.inventario);
+      return fila(x.nombre, x.prom_dia_kg ? `Gasto promedio última semana: ${x.prom_dia_kg} kg/día` : '', inv, 'kg', 'kg', inv < 0 ? 'var(--rojo)' : '');
+    }).join('') || '<p class="hint">Aún no hay materias primas.</p>'}
+    <h2>Concentrado terminado en la planta</h2>${(S.datos?.referencias || []).map(r => fila(r.nombre, '', r2n(m.planta[r.id] || 0), 'bultos', 'bultos', (m.planta[r.id] || 0) < 0 ? 'var(--rojo)' : '')).join('')}` : '';
+  return `${barra('Inventario', 'Alimento y materias primas', true)}<main>
     ${n ? `<div class="aviso rojo"><b>${n} referencia(s) con menos de 3 días de alimento.</b> Avisa a la planta para despachar.</div>` : `<div class="aviso ok">No hay alertas: todas las referencias tienen más de 3 días.</div>`}
-    ${gs.map(g => `<h2>${esc(g.nombre)}</h2>${g.filas.length ? g.filas.map(f => `<div class="li"><span><b>${esc(f.ref)}</b>
+    ${planta}
+    ${gs.map(g => `<h2>Concentrado en ${esc(g.nombre)}</h2>${g.filas.length ? g.filas.map(f => `<div class="li"><span><b>${esc(f.ref)}</b>
       <small>Gasto promedio última semana: ${f.prom.toFixed(1)} bultos/día</small></span>
       <span style="text-align:right"><b style="font-size:20px">${f.inv}</b><small style="display:block;color:${col[f.estado]};font-weight:700">${txt(f)}</small></span></div>`).join('') : '<p class="hint">Aún no hay inventario cargado.</p>'}`).join('')}
-    ${S.usuario?.rol !== 'operador' ? `<h2>Planta</h2>${(S.datos?.referencias || []).filter(r => r.id in m.planta).map(r => `<div class="li"><span><b>${esc(r.nombre)}</b><small>Producido − despachado</small></span><span style="text-align:right"><b style="font-size:20px">${Math.round(m.planta[r.id] * 100) / 100}</b></span></div>`).join('') || '<p class="hint">Aún no hay producción registrada.</p>'}` : ''}
   </main>`;
 }
 
@@ -1007,6 +1109,8 @@ document.addEventListener('click', async e => {
     case 'tareas': ir('tareas'); break;
     case 'envios': ir('envios'); break;
     case 'inventario': ir('inventario'); break;
+    case 'ins-add': S.form.vals.insumos.push({ mp: '', kg: '' }); render(); break;
+    case 'ins-del': S.form.vals.insumos.splice(Number(el.dataset.i), 1); if (!S.form.vals.insumos.length) S.form.vals.insumos.push({ mp: '', kg: '' }); render(); break;
     case 'sync': sincronizar(); break;
     case 'refrescar':
       toast('Actualizando…');
@@ -1052,8 +1156,9 @@ document.addEventListener('input', e => {
     const total = l.length; if (t.value) l = l.filter(c => c.arete.toLowerCase().includes(t.value.toLowerCase()));
     $('#lstCerda').innerHTML = listaCerdasHtml(l, total); return;
   }
+  if (t.dataset.ins !== undefined && S.form) { S.form.vals.insumos[Number(t.dataset.ins)][t.dataset.f] = t.value; const h = $('#invHint'); if (h) h.innerHTML = hintInv(); return; }
   if (t.dataset.k && S.form) S.form.vals[t.dataset.k] = t.value;
-  if (S.form && t.dataset.k === 'bultos') { const h = $('#invHint'); if (h) h.innerHTML = hintInv(); }
+  if (S.form && (t.dataset.k === 'bultos' || t.dataset.k === 'kg')) { const h = $('#invHint'); if (h) h.innerHTML = hintInv(); }
   if (S.form?.tipo === 'pesaje' && (t.dataset.k === 'cantidad' || t.dataset.k === 'peso_total')) {
     const n = num(S.form.vals.cantidad), tt = num(S.form.vals.peso_total), el = $('#promLote');
     if (el) el.textContent = (n > 0 && tt > 0) ? `Promedio: ${(tt / n).toFixed(1)} kg por animal` : '';
@@ -1062,6 +1167,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'recFecha') { S.recel.fecha = t.value || hoy(); render(); }
+  else if (t.tagName === 'SELECT' && t.dataset.ins !== undefined && S.form) { S.form.vals.insumos[Number(t.dataset.ins)].mp = t.value; render(); }
   else if (t.tagName === 'SELECT' && t.dataset.k && S.form) {
     S.form.vals[t.dataset.k] = t.value;
     if (t.dataset.k === 'referencia' && S.form.tipo === 'alim_cria') {

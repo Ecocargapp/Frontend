@@ -199,6 +199,7 @@ async function entrarApp(){
   $('#app').classList.remove('oculto');
   $('#foot-nom').textContent = usuarioActual.nombre;
   $('#foot-em').textContent = usuarioActual.email;
+  if (usuarioActual.rol === 'planta') { location.href = 'planta.html'; return; }
   const esAdmin = usuarioActual.rol === 'admin';
   $('#nav-usuarios').style.display = esAdmin ? '' : 'none';
   if (esAdmin) cargarUsuarios();
