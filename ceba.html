@@ -116,11 +116,10 @@ tr:last-child td{border-bottom:none}
 
     <!-- MOVIMIENTOS -->
     <section class="vista activa" data-tab="movimientos">
-      <div class="nota">Las muertes y ventas se registran <strong>por lote</strong>. Cada lote lleva su propio inventario y su alimento, así el costeo de cada venta usa solo lo que consumió ese lote.</div>
+      <div class="nota">El inventario se maneja <strong>por granja</strong>: cada lote trasladado desde cría <strong>suma</strong> sus animales (aparece como «ingreso») y las muertes y ventas se descuentan del total de la granja. El costeo de cada venta reparte el alimento de la granja por cabeza.</div>
       <div class="panel">
         <h3>Registrar movimiento (muerte o venta)</h3>
         <div class="form-row">
-          <div class="campo"><label>Lote</label><select id="m-lote"></select></div>
           <div class="campo"><label>Tipo</label><select id="m-tipo"><option value="venta">Venta</option><option value="muerte">Muerte</option></select></div>
           <div class="campo"><label>Fecha</label><input id="m-fecha" type="date"></div>
           <div class="campo"><label>Cantidad</label><input id="m-cantidad" type="number" min="1"></div>
@@ -132,16 +131,15 @@ tr:last-child td{border-bottom:none}
         <div class="msg" id="m-msg"></div>
       </div>
       <div class="seccion-tit">Historial de movimientos</div>
-      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Lote</th><th>Tipo</th><th>Cantidad</th><th>Peso prom.</th><th>Valor</th><th>Detalle</th><th></th></tr></thead><tbody id="mov-tabla"></tbody></table></div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Origen</th><th>Tipo</th><th>Cantidad</th><th>Peso prom.</th><th>Valor</th><th>Detalle</th><th></th></tr></thead><tbody id="mov-tabla"></tbody></table></div>
     </section>
 
     <!-- CONSUMO -->
     <section class="vista" data-tab="consumo">
-      <div class="nota">Registra el consumo <strong>por lote</strong>. Cada lote acumula su propio alimento, que se usará para costear sus ventas.</div>
+      <div class="nota">Registra el consumo de alimento sobre el <strong>total de la granja</strong>. Descuenta del inventario de concentrado de esa granja según la referencia.</div>
       <div class="panel">
         <h3>Registrar consumo de alimento</h3>
         <div class="form-row">
-          <div class="campo"><label>Lote</label><select id="c-lote"></select></div>
           <div class="campo"><label>Fecha</label><input id="c-fecha" type="date"></div>
           <div class="campo"><label>Bultos (40 kg)</label><input id="c-bultos" type="number" step="0.01"></div>
           <div class="campo"><label>Costo/bulto ($)</label><input id="c-costo" type="number" step="0.01"></div>
@@ -151,12 +149,12 @@ tr:last-child td{border-bottom:none}
         <div class="msg" id="c-msg"></div>
       </div>
       <div class="seccion-tit">Historial de consumo</div>
-      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Lote</th><th>Bultos</th><th>Kg</th><th>Costo/bulto</th><th>Tipo</th><th></th></tr></thead><tbody id="cons-tabla"></tbody></table></div>
+      <div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Bultos</th><th>Kg</th><th>Costo/bulto</th><th>Tipo</th><th></th></tr></thead><tbody id="cons-tabla"></tbody></table></div>
     </section>
 
     <!-- LOTES DESDE CRÍA -->
     <section class="vista" data-tab="lotes">
-      <div class="nota">Agrupa los lechones destetados en un lote de ceba, <strong>por rango de fechas</strong> o <strong>eligiendo destetes uno por uno</strong>. No importa si la cerda tiene banda o no. Luego trasládalo a una granja.</div>
+      <div class="nota">Agrupa los lechones destetados en un lote, <strong>por rango de fechas</strong> o <strong>eligiendo destetes uno por uno</strong>. Al <strong>trasladar</strong> el lote a una granja, sus animales se suman al inventario total de esa granja.</div>
 
       <div class="panel">
         <h3>Crear lote desde destetes</h3>
@@ -199,11 +197,10 @@ tr:last-child td{border-bottom:none}
 
     <!-- LIQUIDACIÓN -->
     <section class="vista" data-tab="liquidacion">
-      <div class="nota">La liquidación es <strong>por lote</strong>: calcula la conversión (kg alimento del lote ÷ kg producidos) y el costo por kilo (alimento del lote + lechones ÷ kg producidos). Elige el lote e ingresa el peso promedio de salida.</div>
+      <div class="nota">La liquidación es <strong>por granja</strong>: calcula la conversión (kg de alimento de la granja ÷ kg producidos) y el costo por kilo (alimento + lechones ÷ kg producidos) con todo el historial de la granja elegida arriba. Ingresa el peso promedio de salida.</div>
       <div class="panel">
-        <h3>Liquidar lote</h3>
+        <h3>Liquidar granja</h3>
         <div class="form-row">
-          <div class="campo"><label>Lote</label><select id="l-lote"></select></div>
           <div class="campo"><label>Peso prom. salida (kg)</label><input id="l-peso" type="number" step="0.01"></div>
           <button class="btn-accent" id="btn-liquidar">Calcular</button>
           <button class="btn-ghost" id="btn-guardar-liq" style="display:none">Guardar liquidación</button>
@@ -246,16 +243,6 @@ $('#m-tipo').addEventListener('change', ()=>{
   $('#wrap-causa').style.display = t==='muerte'?'':'none';
 });
 
-// Carga los lotes activos de la granja en los selectores de consumo, movimientos y liquidación
-let lotesGranja = [];
-async function cargarLotesEnSelectores(){
-  lotesGranja = await api('/api/ceba/lotes-granja/'+granjaId);
-  const opts = lotesGranja.length
-    ? lotesGranja.map(l=>`<option value="${l.id}">${l.nombre}</option>`).join('')
-    : `<option value="">(sin lotes en esta granja)</option>`;
-  ['#m-lote','#c-lote','#l-lote'].forEach(sel=>{ if($(sel)) $(sel).innerHTML = opts; });
-}
-
 async function cargarGranjas(){
   const g = await api('/api/ceba/granjas');
   $('#granja').innerHTML = g.map(x=>`<option value="${x.id}">${x.nombre}</option>`).join('');
@@ -265,7 +252,6 @@ async function cargarGranjas(){
 $('#granja').addEventListener('change', ()=>{ granjaId=+$('#granja').value; refrescar(); });
 
 async function refrescar(){
-  await cargarLotesEnSelectores();
   await cargarInventario();
   await cargarMovimientos();
 }
@@ -274,7 +260,7 @@ async function cargarInventario(){
   const i = await api('/api/ceba/inventario/'+granjaId);
   $('#cards-inv').innerHTML = `
     <div class="card destacado"><div class="lbl">Inventario actual</div><div class="num">${i.inventario_actual}</div><div class="sub">animales vivos</div></div>
-    <div class="card"><div class="lbl">Ingresados</div><div class="num">${i.ingresos}</div></div>
+    <div class="card"><div class="lbl">Ingresados</div><div class="num">${i.ingresos}</div><div class="sub">${i.traslados} traslado(s) de lotes</div></div>
     <div class="card"><div class="lbl">Muertes</div><div class="num">${i.muertes}</div><div class="sub">${i.ingresos?((i.muertes/i.ingresos)*100).toFixed(1):0}% mortalidad</div></div>
     <div class="card"><div class="lbl">Vendidos</div><div class="num">${i.ventas}</div></div>
     <div class="card"><div class="lbl">Alimento consumido</div><div class="num">${fmt(i.bultos_consumidos)}</div><div class="sub">bultos · ${fmt(i.kg_alimento)} kg</div></div>`;
@@ -290,13 +276,13 @@ async function cargarMovimientos(){
     }
     return `<tr>
       <td class="mono">${r.fecha.slice(0,10)}</td>
-      <td>${r.lote_nombre||'—'}</td>
+      <td>${r.tipo==='ingreso'?(r.lote_nombre?'Lote '+r.lote_nombre:'Traslado'):'—'}</td>
       <td>${pill(r.tipo)}</td>
       <td><strong>${r.cantidad}</strong></td>
       <td>${r.peso_promedio?fmt(r.peso_promedio)+' kg':'—'}</td>
       <td>${r.tipo==='venta'?money(r.valor_venta):'—'}</td>
       <td style="font-size:12px;color:var(--texto-sec)">${detalle}</td>
-      <td>${r.tipo==='venta'&&r.costo_alimento_asignado?`<button class="mini-btn" onclick='verCosteoVenta(${JSON.stringify(r).replace(/'/g,"&#39;")})'>📊</button> `:''}<button class="mini-btn del" onclick="borrarMov(${r.id})">🗑️</button></td>
+      <td>${r.tipo==='venta'&&r.costo_alimento_asignado?`<button class="mini-btn" onclick='verCosteoVenta(${JSON.stringify(r).replace(/'/g,"&#39;")})'>📊</button> `:''}<button class="mini-btn del" title="${r.tipo==='ingreso'?'Deshacer traslado':'Eliminar'}" onclick="borrarMov(${r.id},'${r.tipo}')">🗑️</button></td>
     </tr>`;
   }).join('') : `<tr><td colspan="8" class="vacio">Sin movimientos todavía</td></tr>`;
 }
@@ -320,9 +306,7 @@ function verCosteoVenta(r){
 $('#m-fecha').value = hoy();
 $('#btn-mov').addEventListener('click', async ()=>{
   const t=$('#m-tipo').value;
-  const loteId = +$('#m-lote').value;
-  if(!loteId){ $('#m-msg').className='msg error'; $('#m-msg').textContent='Esta granja no tiene lotes. Traslada un lote primero.'; return; }
-  const body={ granja_id:granjaId, lote_id:loteId, fecha:$('#m-fecha').value, tipo:t, cantidad:+$('#m-cantidad').value };
+  const body={ granja_id:granjaId, fecha:$('#m-fecha').value, tipo:t, cantidad:+$('#m-cantidad').value };
   body.peso_promedio=+$('#m-peso').value||null;
   if(t==='venta') body.valor_venta=+$('#m-venta').value||null;
   if(t==='muerte') body.causa=$('#m-causa').value.trim()||null;
@@ -334,20 +318,18 @@ $('#btn-mov').addEventListener('click', async ()=>{
     refrescar(); cargarMovimientos();
   }catch(e){ msg.className='msg error'; msg.textContent=e.message; }
 });
-async function borrarMov(id){ if(!confirm('¿Eliminar este movimiento?'))return; try{await api('/api/ceba/movimientos/'+id,{method:'DELETE'});refrescar();cargarMovimientos();}catch(e){alert(e.message);} }
+async function borrarMov(id,tipo){ if(!confirm(tipo==='ingreso'?'¿Deshacer este traslado? Los animales salen de la granja y el lote vuelve a quedar disponible.':'¿Eliminar este movimiento?'))return; try{await api('/api/ceba/movimientos/'+id,{method:'DELETE'});refrescar();cargarMovimientos();}catch(e){alert(e.message);} }
 
 async function cargarConsumo(){
   const c = await api('/api/ceba/consumo/'+granjaId);
   $('#cons-tabla').innerHTML = c.length ? c.map(r=>`
-    <tr><td class="mono">${r.fecha.slice(0,10)}</td><td>${r.lote_nombre||'—'}</td><td>${fmt(r.bultos)}</td><td>${fmt(r.bultos*40)} kg</td><td>${money(r.costo_bulto)}</td><td>${r.tipo_alimento||'—'}</td>
+    <tr><td class="mono">${r.fecha.slice(0,10)}</td><td>${fmt(r.bultos)}</td><td>${fmt(r.bultos*40)} kg</td><td>${money(r.costo_bulto)}</td><td>${r.tipo_alimento||'—'}</td>
     <td><button class="mini-btn del" onclick="borrarCons(${r.id})">🗑️</button></td></tr>`).join('')
-    : `<tr><td colspan="7" class="vacio">Sin consumo registrado</td></tr>`;
+    : `<tr><td colspan="6" class="vacio">Sin consumo registrado</td></tr>`;
 }
 $('#c-fecha').value = hoy();
 $('#btn-cons').addEventListener('click', async ()=>{
-  const loteId = +$('#c-lote').value;
-  if(!loteId){ $('#c-msg').className='msg error'; $('#c-msg').textContent='Esta granja no tiene lotes. Traslada un lote primero.'; return; }
-  const body={ granja_id:granjaId, lote_id:loteId, fecha:$('#c-fecha').value, bultos:+$('#c-bultos').value,
+  const body={ granja_id:granjaId, fecha:$('#c-fecha').value, bultos:+$('#c-bultos').value,
     costo_bulto:+$('#c-costo').value||null, referencia_id:$('#c-tipo').value||null };
   const msg=$('#c-msg'); msg.className='msg';
   try{
@@ -363,9 +345,7 @@ async function borrarCons(id){ if(!confirm('¿Eliminar este registro?'))return; 
 $('#btn-liquidar').addEventListener('click', ()=>liquidar(false));
 $('#btn-guardar-liq').addEventListener('click', ()=>liquidar(true));
 async function liquidar(guardar){
-  const loteId = +$('#l-lote').value;
-  if(!loteId){ $('#l-msg').className='msg error'; $('#l-msg').textContent='Elige un lote para liquidar.'; return; }
-  const body={ lote_id:loteId, peso_promedio_salida:+$('#l-peso').value, guardar };
+  const body={ granja_id:granjaId, peso_promedio_salida:+$('#l-peso').value, guardar };
   const msg=$('#l-msg'); msg.className='msg';
   try{
     const r = await api('/api/ceba/liquidar',{method:'POST',body:JSON.stringify(body)});
@@ -489,10 +469,10 @@ async function renombrarLote(id, actual){
 }
 async function trasladar(loteId){
   const granjaDestino = $('#dest-'+loteId).value;
-  if(!confirm('¿Trasladar este lote a la granja seleccionada? Se creará el ingreso automáticamente.')) return;
+  if(!confirm('¿Trasladar este lote a la granja seleccionada? Sus animales se sumarán al inventario de la granja.')) return;
   try{
-    await api('/api/ceba/lotes/'+loteId+'/trasladar',{method:'POST',body:JSON.stringify({granja_id:+granjaDestino})});
-    alert('Lote trasladado. El ingreso quedó registrado en la granja de ceba.');
+    const r = await api('/api/ceba/lotes/'+loteId+'/trasladar',{method:'POST',body:JSON.stringify({granja_id:+granjaDestino})});
+    alert('Lote trasladado. Inventario actual de la granja: '+r.inventario_actual+' animales.');
     cargarLotes(); refrescar();
   }catch(e){ alert(e.message); }
 }

@@ -1,6 +1,6 @@
 // AgroSoft Campo — service worker: deja la app disponible sin señal.
 // Cambia VERSION cuando se publique una versión nueva de la app.
-const VERSION = 'campo-v4';
+const VERSION = 'campo-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', '../config.js'];
 
 self.addEventListener('install', e => {
