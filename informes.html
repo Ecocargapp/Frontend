@@ -117,7 +117,8 @@ tr:last-child td{border-bottom:none}
     <div class="tabs">
       <button data-tab="reproductivo" class="activo">Reproductivo</button>
       <button data-tab="costos">Consumo y costos</button>
-      <button data-tab="bandas">Por banda</button>
+      <button data-tab="bandasprob">Previsión de partos</button>
+      <button data-tab="bandas">Resultados por banda</button>
       <button data-tab="descarte">Hembras a descartar</button>
     </div>
 
@@ -143,6 +144,21 @@ tr:last-child td{border-bottom:none}
       <div class="seccion-tit">Consumo por fase</div>
       <div class="tabla-wrap"><table id="tabla-costos"><thead><tr><th>Fase</th><th>Bultos</th><th>Costo total</th></tr></thead><tbody></tbody></table></div>
       <div class="nota" id="nota-costos"></div>
+    </section>
+
+    <!-- BANDAS: PARTOS PROBABLES SEGÚN FECHA DE SERVICIO -->
+    <section class="vista" data-tab="bandasprob">
+      <div class="nota" style="margin-bottom:12px">Cerdas servidas dentro del periodo (<b>Desde / Hasta = fecha de servicio</b>), estén o no confirmadas preñadas. Parto probable = servicio + 114 días.</div>
+      <div class="filtros" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+        <div class="campo"><label>Agrupar por</label><select id="bp-grupo"><option value="dia">Día de servicio</option><option value="semana">Semana de servicio (lun–dom)</option></select></div>
+        <div class="campo"><label>Detalle</label><select id="bp-detalle"><option value="1">Mostrar aretes</option><option value="0">Solo conteos</option></select></div>
+      </div>
+      <div class="export-bar">
+        <button class="btn-ghost" onclick="exportarExcel('bandasprob')">⬇ Excel</button>
+        <button class="btn-ghost" onclick="exportarPDF('bandasprob')">⬇ PDF</button>
+      </div>
+      <div class="cards" id="cards-bp"></div>
+      <div class="tabla-wrap"><table id="tabla-bp"><thead><tr><th>Banda (servicio)</th><th>Parto probable</th><th>Cerdas</th><th>Aretes</th></tr></thead><tbody></tbody></table></div>
     </section>
 
     <!-- BANDAS -->
@@ -225,6 +241,7 @@ $('#btn-aplicar').addEventListener('click',()=>cargarTab(document.querySelector(
 async function cargarTab(tab){
   if(tab==='reproductivo') return cargarRepro();
   if(tab==='costos') return cargarCostos();
+  if(tab==='bandasprob') return cargarBandasProb();
   if(tab==='bandas') return cargarBandas();
   if(tab==='descarte') return cargarDescarte();
 }
@@ -270,6 +287,48 @@ async function cargarCostos(){
   $('#tabla-costos tbody').innerHTML = d.por_fase.map(f=>`<tr><td style="text-transform:capitalize">${f.fase}</td><td style="text-align:right">${fmt(f.bultos)}</td><td style="text-align:right">${money(f.costo_total)}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--texto-sec);padding:20px">Sin datos</td></tr>`;
   $('#nota-costos').textContent = d.nota;
 }
+
+// BANDAS (partos probables según fecha de servicio)
+function lunesDe(iso){ const d=new Date(iso+'T12:00:00'); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return d.toISOString().slice(0,10); }
+function sumaDias(iso,n){ const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function agruparBP(rows,modo){
+  const g=new Map();
+  for(const r of rows){
+    const k = modo==='semana' ? lunesDe(r.fecha_servicio) : r.fecha_servicio;
+    if(!g.has(k)) g.set(k,[]); g.get(k).push(r);
+  }
+  return [...g.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([k,filas])=>{
+    const ini=k, fin=modo==='semana'?sumaDias(k,6):k;
+    const pIni=sumaDias(ini,114), pFin=sumaDias(fin,114);
+    return { servicio: modo==='semana'?`${ini} a ${fin}`:ini, parto: modo==='semana'?`${pIni} a ${pFin}`:pIni, filas };
+  });
+}
+async function cargarBandasProb(){
+  if(!$('#f-desde').value && !$('#f-hasta').value){
+    const h=new Date(); const d=new Date(); d.setDate(d.getDate()-30);
+    $('#f-desde').value=d.toISOString().slice(0,10); $('#f-hasta').value=h.toISOString().slice(0,10);
+  }
+  const rows = await api('/api/informes/bandas-servicio'+params()); datosActuales.bandasprob=rows;
+  pintarBandasProb();
+}
+function pintarBandasProb(){
+  const rows=datosActuales.bandasprob||[]; const modo=$('#bp-grupo').value; const detalle=$('#bp-detalle').value==='1';
+  const grupos=agruparBP(rows,modo); datosActuales.bandasprobGrupos=grupos;
+  const cerdas=new Set(rows.map(r=>r.cerda_id)).size;
+  const conRes=rows.filter(r=>r.reservicio_posterior).length;
+  const confirmadas=rows.filter(r=>r.diagnostico==='positivo').length;
+  $('#cards-bp').innerHTML=`
+    <div class="card destacada"><div class="lbl">Servicios en el periodo</div><div class="num">${fmt(rows.length)}</div><div class="sub">${fmt(cerdas)} cerdas distintas</div></div>
+    <div class="card"><div class="lbl">Bandas</div><div class="num">${fmt(grupos.length)}</div></div>
+    <div class="card"><div class="lbl">Preñez confirmada</div><div class="num">${fmt(confirmadas)}</div><div class="sub">el resto sin diagnóstico o negativo</div></div>
+    <div class="card"><div class="lbl">Con reservicio posterior</div><div class="num">${fmt(conRes)}</div><div class="sub">se les repitió el servicio</div></div>`;
+  const marca=r=>{ let t=r.arete; const m=[]; if(r.diagnostico==='positivo')m.push('✓'); if(r.diagnostico==='negativo')m.push('neg'); if(r.reservicio_posterior)m.push('reserv.'); if(r.ya_pario)m.push('parió'); return m.length?`${t} <small style="color:var(--texto-sec)">(${m.join(', ')})</small>`:t; };
+  $('#tabla-bp tbody').innerHTML = grupos.length ? grupos.map(g=>`
+    <tr><td class="mono"><strong>${g.servicio}</strong></td><td class="mono">${g.parto}</td><td><strong>${g.filas.length}</strong></td>
+    <td style="white-space:normal;min-width:240px">${detalle?g.filas.map(marca).join(', '):'—'}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:var(--texto-sec);padding:20px">No hay servicios en ese periodo</td></tr>`;
+}
+document.addEventListener('change',e=>{ if(e.target.id==='bp-grupo'||e.target.id==='bp-detalle') pintarBandasProb(); });
 
 // BANDAS
 async function cargarBandas(){
@@ -332,6 +391,8 @@ function filasParaExport(tab){
     d.por_fase.forEach(f=>r.push([f.fase,f.bultos,f.costo_total]));
     r.push([]); r.push(['Bultos totales',d.bultos_total]); r.push(['Costo alimento total',d.costo_alimento_total]);
     r.push(['Lechones destetados',d.lechones_destetados]); r.push(['Costo lechón (alimento)',d.costo_lechon_alimento]); return r; }
+  if(tab==='bandasprob'){ const rows=datosActuales.bandasprob||[]; const r=[['Banda (servicio)','Parto probable','Arete','Fecha servicio','Parto probable (individual)','Estado actual','Diagnóstico','Reservicio posterior','Ya parió']];
+    (datosActuales.bandasprobGrupos||[]).forEach(g=>g.filas.forEach(x=>r.push([g.servicio,g.parto,x.arete,x.fecha_servicio,x.parto_probable,x.estado,x.diagnostico||'sin diagnóstico',x.reservicio_posterior?'sí':'no',x.ya_pario?'sí':'no']))); return r; }
   if(tab==='bandas'){ const d=datosActuales.bandas; const r=[['Banda','Fecha parto','Partos','Nac vivos','Nac totales','Prom vivos','Destetados']];
     d.forEach(b=>r.push([b.nombre,b.fecha_parto?b.fecha_parto.slice(0,10):'',b.partos,b.nacidos_vivos,b.nacidos_totales,b.prom_nacidos_vivos,b.destetados])); return r; }
   if(tab==='descarte'){ const d=datosActuales.descarte; const r=[['Tipo','Arete','Ciclo','Detalle']];
