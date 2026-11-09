@@ -138,7 +138,8 @@ h2.sec{font-size:15px;font-weight:800;margin:6px 0 10px;color:var(--acero-osc)}
     </div>
 
     <section class="vista activa" data-tab="inventario">
-      <h2 class="sec">Materias primas en la planta <small style="font-weight:500;color:var(--texto-sec)">· kg</small></h2>
+      <h2 class="sec" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">Materias primas en la planta <small style="font-weight:500;color:var(--texto-sec)">· kg</small>
+        <button class="btn-ghost" id="btn-nueva-mp" style="margin-left:auto;font-size:13px">+ Nueva materia prima</button></h2>
       <div class="tabla-wrap"><table><thead><tr><th>Materia prima</th><th class="n">Recibido</th><th class="n">Usado en baches</th><th class="n">Ajustes</th><th class="n">Inventario (kg)</th><th class="n">Gasto diario (7 d)</th><th class="n">Días restantes</th></tr></thead><tbody id="tb-mp"></tbody></table></div>
       <h2 class="sec">Concentrado terminado en la planta <small style="font-weight:500;color:var(--texto-sec)">· bultos de 40 kg</small></h2>
       <div class="tabla-wrap"><table><thead><tr><th>Referencia</th><th class="n">Producido</th><th class="n">Despachado</th><th class="n">Ajustes</th><th class="n">Inventario (bultos)</th></tr></thead><tbody id="tb-planta"></tbody></table></div>
@@ -262,9 +263,30 @@ const optsRef = () => refs.filter(r=>r.activa).map(r=>`<option value="${r.id}">$
 const optsGranja = () => granjas.map(g=>`<option value="${g.id}">${esc(g.nombre)}</option>`).join('');
 const post = (r,b)=>api('/api/planta/'+r,{method:'POST',body:JSON.stringify(b)});
 const optsMp = () => mps.filter(m=>m.activa).map(m=>`<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+
+// ---- Crear materia prima nueva ----
+async function crearMp(nombre){
+  const r = await post('materias-primas',{nombre});
+  mps = await api('/api/planta/materias-primas'); return r;
+}
+$('#btn-nueva-mp').onclick=()=>modal('Nueva materia prima',`
+  <div class="campo-m"><label>Nombre *</label><input id="f-nom-mp" placeholder="ej. Harina de arroz"></div>
+  <div class="campo-m"><label>Inventario inicial (kg) <small>(opcional)</small></label><input id="f-ini-mp" type="number" step="0.01" min="0"></div>
+  <p style="font-size:12px;color:var(--texto-sec)">Queda disponible en recepciones, baches y ajustes. El inventario inicial se registra como un ajuste.</p>`,
+  async()=>{ const nom=$('#f-nom-mp').value.trim(); if(!nom) throw new Error('Escribe el nombre de la materia prima');
+    const r=await crearMp(nom); const kg=+$('#f-ini-mp').value;
+    if(kg>0) await post('mp-ajustes',{fecha:hoy(),materia_prima_id:r.id,kg,motivo:'Inventario inicial'}); });
+document.addEventListener('click',async e=>{
+  if(e.target.id==='mp-nueva-link'){ e.preventDefault(); $('#mp-nueva-box').style.display='flex'; $('#mp-nueva-nom').focus(); }
+  if(e.target.id==='mp-nueva-ok'){ const nom=$('#mp-nueva-nom').value.trim(); if(!nom) return;
+    try{ const r=await crearMp(nom); $('#f-mp').innerHTML=optsMp(); $('#f-mp').value=r.id; $('#mp-nueva-box').style.display='none'; $('#m-err').textContent=''; }
+    catch(er){ $('#m-err').textContent=er.message; } }
+});
 $('#btn-rec').onclick=()=>modal('Recepción de materia prima',`
   <div class="grid2"><div class="campo-m"><label>Fecha *</label><input id="f-fecha" type="date" value="${hoy()}"></div>
-  <div class="campo-m"><label>Materia prima *</label><select id="f-mp">${optsMp()}</select></div></div>
+  <div class="campo-m"><label>Materia prima *</label><select id="f-mp">${optsMp()}</select>
+    <a href="#" id="mp-nueva-link" style="font-size:12px;display:inline-block;margin-top:4px">¿No está en la lista? + Crear materia prima</a>
+    <div id="mp-nueva-box" style="display:none;margin-top:6px;gap:6px"><input id="mp-nueva-nom" placeholder="Nombre de la nueva materia prima" style="flex:1"><button type="button" class="btn-ghost" id="mp-nueva-ok">Crear</button></div></div></div>
   <div class="grid2"><div class="campo-m"><label>Cantidad recibida (kg) *</label><input id="f-kg" type="number" step="0.01" min="0"></div>
   <div class="campo-m"><label>Lote</label><input id="f-lote"></div></div>
   <div class="grid2"><div class="campo-m"><label>Color</label><input id="f-color" placeholder="ej. Amarillo"></div>
